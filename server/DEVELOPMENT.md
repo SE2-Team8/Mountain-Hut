@@ -68,3 +68,38 @@ Then run:
 4. `node index.js` | `nodemon index.js` — starts the server.
 
 The server listens at `http://localhost:3001`. The example API route is `GET /api/users/:id`.
+
+### Sending Emails with `smtpService`
+
+The `smtpService` provides two functions for sending emails using Gmail SMTP:
+
+- `sendEmail()`: Sends an email using plain text and/or HTML content.
+- `sendTemplateEmail()`: Sends an email using an HTML template stored in the `templates/` directory.
+
+#### Using `sendTemplateEmail()`
+
+```javascript
+import { sendTemplateEmail } from "../services/smtpService.js";
+
+await sendTemplateEmail({
+    to: "recipient@example.com",
+    subject: "Booking Confirmation",
+    templateName: "booking-confirmation",
+    data: {
+        guestName: "Ab Rezaei",
+        bookingReference: "sample-reference-id",
+        checkIn: "2026-11-10",
+        checkOut: "2026-11-13",
+        items: [
+            { description: "Accommodation", price: "240.00" },
+            { description: "Breakfast", price: "30.00" },
+        ],
+        total: "270.00",
+    },
+    text: "Your booking has been confirmed.",
+});
+```
+
+**Important notes:**
+- `templateName` must match an existing HTML filename inside `templates/`, **without the `.html` extension**. For example, `booking-confirmation` refers to `templates/booking-confirmation.html`.
+- The `data` object provides values for the placeholders in the HTML template (e.g., `{{guestName}}`).
