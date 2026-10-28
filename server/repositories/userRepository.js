@@ -8,7 +8,13 @@ async function getUserById(id) {
     return {
         id: user.id,
         username: user.username
+
+		// TODO: change fields and add others
     }
 }
+
+// TODO: createUser
+// TODO: authenticateUser
+// TODO: what to do with user types??? (waiting for reply to issue...)
 
 export { getUserById };
