@@ -1,7 +1,7 @@
 import api from "@/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import PhoneInput, {isValidPhoneNumber} from 'react-phone-number-input';
+import PhoneInput, {isValidPhoneNumber} from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { Field, FieldError, FieldGroup, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
