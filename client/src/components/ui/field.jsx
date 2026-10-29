@@ -214,6 +214,12 @@ function FieldError({
   );
 }
 
+
+function MandatoryLabel({htmlFor, children}) {
+  return (
+    <FieldLabel htmlFor={htmlFor}> {children} <span aria-hidden = "true" className="text-destructive">*</span> </FieldLabel>
+  )
+}
 export {
   Field,
   FieldLabel,
@@ -225,4 +231,5 @@ export {
   FieldSet,
   FieldContent,
   FieldTitle,
+  MandatoryLabel
 }
