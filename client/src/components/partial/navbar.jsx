@@ -1,4 +1,4 @@
-import logo from '@/assets/img/logo.png';
+import logo from '@/assets/img/LogoName.png';
 import { Link, useLocation } from "react-router";
 import {
     NavigationMenu,
@@ -12,29 +12,29 @@ function Navbar({ className, ...props }) {
     const location = useLocation(); 
     return (
         <nav className="bg-background fixed w-full z-20 top-0 start-0 border-b border-default">
-            <div className="max-w-screen-2xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <div className="flex flex-wrap justify-around mx-0 p-4">
 
-                <Link to="/" className="flex items-center space-x-3" viewTransition>
-
-                    <img src={logo} className="h-7" alt="Logo" />
-                    <span className="self-center text-xl text-heading font-semibold whitespace-nowrap">Mountain Hut</span>
-
+                <Link to="/" className="flex items-center  space-x-3" viewTransition>
+                    <img src={logo} className="h-30" alt="Logo" />
                 </Link>
                 <NavigationMenu>
                     <NavigationMenuList>
 
                         <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
+                            <Button variant='secondary' size='lg' className="font-semibold text-green-800" asChild>
                                 {location.pathname !== '/' && <Link to="/" viewTransition>Home</Link>}
-                            </NavigationMenuLink>
+                            </Button>
                         </NavigationMenuItem>
-                        
 
-                    </NavigationMenuList>
+                        <NavigationMenuItem>
+                        <Button variant='secondary' size='lg' className="font-semibold text-green-800" asChild>
+                        {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
+                        </Button>
+                        </NavigationMenuItem>
+
+                        </NavigationMenuList>
                 </NavigationMenu>
-                <Button asChild>
-                    {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
-                </Button>
+
 
             </div>
         </nav>

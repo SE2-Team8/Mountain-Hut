@@ -6,7 +6,7 @@ import "react-phone-number-input/style.css";
 import { Field, FieldError, FieldGroup, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Controller, useForm} from "react-hook-form";
-import { useNavigate, Link } from "react-router";
+import { useNavigate } from "react-router";
 import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../assets/css/auth.css"
