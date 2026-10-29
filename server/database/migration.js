@@ -23,7 +23,7 @@ db.serialize(() => {
   // dateTimess are saved as ISO strings (yyyy-mm-ddThh:mm:ssZ)  
   db.run(`CREATE TABLE IF NOT EXISTS timeSlots (
     timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
-    startDateTime TEXT NOT NULL,
+    startDateTime UNIQUE TEXT NOT NULL,
 	endDateTime TEXT NOT NULL
   )`);
 
@@ -36,11 +36,11 @@ db.serialize(() => {
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
   )`);
 
-  // TODO: add free seats as well as total seats (redundant, but faster?)
   db.run(`CREATE TABLE IF NOT EXISTS tables (
     tableId INTEGER PRIMARY KEY AUTOINCREMENT,
     tableNumber INTEGER NOT NULL,
 	totalSeats INTEGER NOT NULL,
+	occupiedSeats INTEGER NOT NULL DEFAULT 0,
 	timeSlotId INTEGER NOT NULL,
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
   )`);

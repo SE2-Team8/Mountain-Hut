@@ -64,6 +64,5 @@ async function createHiker(password, fullName, email, phoneNumber, notes=null, e
 }
 
 // TODO: createEmployee, createWarden
-// TODO: what to do with user types??? (waiting for reply to issue...)
 
-export { getUserById, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN};
+export { User, getUserById, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };

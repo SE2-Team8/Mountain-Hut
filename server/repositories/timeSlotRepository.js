@@ -1,21 +1,55 @@
-import { queryGet } from "../utils/query.js";
+import { queryAll, queryGet } from "../utils/query.js";
+import { stringISOToDate } from "../utils/dateTimeFormatter.js";
 
-async function getTimeSlotByStart(startDateTime) {
-    const slot = await queryGet('SELECT * FROM reservations WHERE startDateTime = ?', [startDateTime]);
-
-    if (!slot) return false;
-
-    return {
-        startDateTime: slot.startDateTime,
-        endDateTime: slot.endDateTime
-		// TODO: other fields
-    }
+function TimeSlot(timeSlotId, startDateTime, endDateTime, freeSeats) {
+	this.timeSlotId = timeSlotId
+	this.startDateTime = startDateTime;
+	this.endDateTime = endDateTime;
+	this.freeSeats = freeSeats;
 }
 
-// TODO: getAllTimeSlots (maybe get timeslots with also the number of free seats?)
+async function getTimeSlotByStart(startDateTime) {
+	const dateTimeString = dateToStringISO(startDateTime);
+    const slotRow = await queryGet(
+		`SELECT timeSlots.*, SUM(totalSeats - occupiedSeats) as freeSeats
+		FROM timeSlots WHERE startDateTime = ?`, [dateTimeString]);
+
+    if (!slotRow) return null;
+
+    return TimeSlot(
+		slotRow.timeSlotId,
+		stringISOToDate(slotRow.startDateTime),
+		stringISOToDate(slotRow.endDateTime),
+		slotRow.freeSeats
+	);
+}
+
+async function getAllTimeSlots(from = null, to = null) {
+    const slotRows = await queryAll(
+		`SELECT timeSlots.timeSlotId, startDateTime, endDateTime,
+		SUM(totalSeats - occupiedSeats) AS freeSeats
+		FROM timeSlots, tables
+		WHERE tables.timeSlotId = timeSlots.timeSlotId
+		GROUP BY timeSlots.timeSlotId`);
+
+    let slots = slotRows.map((slotRow) => TimeSlot(
+		slotRow.timeSlotId,
+		stringISOToDate(slotRow.startDateTime),
+		stringISOToDate(slotRow.endDateTime),
+		slotRow.freeSeats
+	));
+
+	// filter to dateTime range
+    if (from)
+		slots = slots.filter((slot) => slot.endDateTime.getTime() >= from);
+	
+	if (to)
+		slots = slots.filter((slot) => slot.startDateTime.getTime() <= from);
+}
 
 // TODO: createTimeSlot
+// TODO: copy table set configuration from 1 slot to another
 
 // TODO (later): deleteTimeSlot, updateTimeSlot
 
-export { getTimeSlotByStart };
+export { TimeSlot, getTimeSlotByStart, getAllTimeSlots };

@@ -98,8 +98,8 @@ db.serialize(() => {
         db.run(
             `INSERT INTO timeSlots (startDateTime, endDateTime) VALUES (?, ?)`,
             [
-				slot.startDateTime.toISOString().slice(0, 19) + 'Z',
-				slot.endDateTime.toISOString().slice(0, 19) + 'Z'
+				dateToStringISO(slot.startDateTime),
+				dateToStringISO(slot.endDateTime),
 			]
         );
     });
