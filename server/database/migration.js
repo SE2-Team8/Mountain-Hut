@@ -7,6 +7,7 @@ db.serialize(() => {
   db.run(`DROP TABLE IF EXISTS timeSlots`);
   db.run(`DROP TABLE IF EXISTS users`);
 
+  // TODO: maybe manage roles differently?
   db.run(`CREATE TABLE IF NOT EXISTS users (
     userId INTEGER PRIMARY KEY AUTOINCREMENT,
     hashedPassword TEXT NOT NULL,
@@ -35,10 +36,11 @@ db.serialize(() => {
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
   )`);
 
+  // TODO: add free seats as well as total seats (redundant, but faster?)
   db.run(`CREATE TABLE IF NOT EXISTS tables (
     tableId INTEGER PRIMARY KEY AUTOINCREMENT,
     tableNumber INTEGER NOT NULL,
-	numberOfSeats INTEGER NOT NULL,
+	totalSeats INTEGER NOT NULL,
 	timeSlotId INTEGER NOT NULL,
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
   )`);
@@ -51,12 +53,6 @@ db.serialize(() => {
 	FOREIGN KEY (tableId) REFERENCES tables(tableId),
 	FOREIGN KEY (reservId) REFERENCES reservations(reservId)
   )`);
-
-  // TODO: change users table fields (??? waiting for reply to issue)
-  // TODO: add reservations table (reservId, userId, partySize, timeslotId, .. notes, allergies)
-  // TODO: add timeSlots table (timeslotId, startDateTime, endDateTime, ... menu)
-  // TODO (for later): add tables table (tableId, tableNumber, timeslotId, numberOfSeats)
-  // TODO (for later): add tableAssignments table (reservId, tableId, occupiedSeats)
 });
 
 db.close();

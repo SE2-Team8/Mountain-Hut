@@ -1,3 +1,4 @@
+import { table } from "console";
 import db from "../config/db.js";
 import crypto from "crypto";
 
@@ -101,5 +102,97 @@ db.serialize(() => {
         );
     });
 });
+
+// tables seeding
+const tableLists = [
+	// list 1
+	[
+		{
+			number: 1,
+			totalSeats: 6
+		},
+		{
+			number: 2,
+			totalSeats: 4
+		},
+		{
+			number: 3,
+			totalSeats: 6
+		},
+		{
+			number: 4,
+			totalSeats: 6
+		},
+		{
+			number: 5,
+			totalSeats: 4
+		},
+		{
+			number: 6,
+			totalSeats: 8
+		},
+	],
+	// list 2
+	[
+		{
+			number: 1,
+			totalSeats: 4
+		},
+		{
+			number: 2,
+			totalSeats: 4
+		},
+		{
+			number: 3,
+			totalSeats: 4
+		},
+		{
+			number: 4,
+			totalSeats: 6
+		},
+		{
+			number: 5,
+			totalSeats: 6
+		},
+		{
+			number: 6,
+			totalSeats: 6
+		},
+	]
+]
+
+const slotsTableSets = [
+	{
+		slotId: 1,
+		listIndex: 0
+	},
+	{
+		slotId: 2,
+		listIndex: 1
+	},
+	{
+		slotId: 3,
+		listIndex: 1
+	},
+]
+
+db.serialize(() => {
+	// for each slot-tableList assignment, load the list on the db
+    slotsTableSets.forEach(({slotId, listIndex}) => {
+		// for each table in the list, load it on the db
+		tableLists[listIndex].forEach((table) => {
+			db.run(
+            `INSERT INTO tables (tableNumber, totalSeats, timeSLotId) VALUES (?, ?, ?)`,
+            [
+				table.number,
+				table.totalSeats,
+				slotId
+			]
+        );
+		})
+    });
+});
+
+// TODO: reservations seeding (?)
 
 db.close();
