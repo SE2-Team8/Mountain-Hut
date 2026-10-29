@@ -1,5 +1,5 @@
 import logo from '@/assets/img/logo.png';
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 function Navbar({ className, ...props }) {
+    const location = useLocation(); 
     return (
         <nav className="bg-background fixed w-full z-20 top-0 start-0 border-b border-default">
             <div className="max-w-screen-2xl flex flex-wrap items-center justify-between mx-auto p-4">
@@ -24,7 +25,7 @@ function Navbar({ className, ...props }) {
 
                         <NavigationMenuItem>
                             <NavigationMenuLink asChild>
-                                <Link to="/" viewTransition>Home</Link>
+                                {location.pathname !== '/' && <Link to="/" viewTransition>Home</Link>}
                             </NavigationMenuLink>
                         </NavigationMenuItem>
                         
@@ -32,7 +33,7 @@ function Navbar({ className, ...props }) {
                     </NavigationMenuList>
                 </NavigationMenu>
                 <Button asChild>
-                    <Link to="/auth/login" viewTransition>Login</Link>
+                    {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
                 </Button>
 
             </div>

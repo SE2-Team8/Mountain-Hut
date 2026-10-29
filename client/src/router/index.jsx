@@ -22,22 +22,23 @@ const router = createBrowserRouter([
                 // Once you have completed the auth middleware, you can use it like this:
                 // middleware: [auth],
             },
-        ]
-    },
-    {
-        path: '/auth',
-        Component: LayoutAuth,
-        children: [
             {
-                path: 'login',
-                Component: PageLogin
+                path: '/auth',
+                Component: LayoutAuth,
+                children: [
+                    {
+                        path: 'login',
+                        Component: PageLogin
+                    },
+                    {
+                        path: 'signup',
+                        Component: PageSignUp
+                    }
+                ]
             },
-            {
-                path: 'signup',
-                Component: PageSignUp
-            }
         ]
     },
+
     {
         Component: LayoutError,
         children: [

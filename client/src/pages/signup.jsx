@@ -227,7 +227,6 @@ function PageSignUp() {
 
             <Field>
               <Button type="submit">Sign Up</Button>
-              <Link className = 'link' to = "/auth/signup">Login</Link> 
             </Field>
             
           </FieldGroup>
