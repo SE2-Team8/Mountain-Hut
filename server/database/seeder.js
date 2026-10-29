@@ -1,6 +1,7 @@
 import { table } from "console";
 import db from "../config/db.js";
 import crypto from "crypto";
+import { PWD_HASH_LEN, SALT_LEN } from "../repositories/userRepository.js";
 
 // user seeding
 const users = [
@@ -42,9 +43,10 @@ const users = [
 	},
 ];
 
+// TODO: use repo constants for salt and hash lengths
 users.forEach((user) => {
-    user.salt = crypto.randomBytes(16).toString('hex');
-    user.hashedPassword = crypto.scryptSync(user.password, user.salt, 64).toString('hex');
+    user.salt = crypto.randomBytes(SALT_LEN).toString('hex');
+    user.hashedPassword = crypto.scryptSync(user.password, user.salt, PWD_HASH_LEN).toString('hex');
 });
 
 db.serialize(() => {
