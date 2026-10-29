@@ -4,8 +4,9 @@ import passport from 'passport';
 import LocalStrategy from 'passport-local';
 import router from './router/index.js';
 import ecxeptionHandler from './middlewares/ecxeptionHandler.js';
-import { getUserFromCredentials } from "./repositories/userRepository.js";
+import { createHiker, getUserById, getUserFromCredentials } from "./repositories/userRepository.js";
 import session from "express-session";
+import { getAllTimeSlots, getTimeSlotByStart } from "./repositories/timeslotRepository.js";
 
 const app = express();
 const port = 3001;
@@ -46,3 +47,20 @@ app.use(ecxeptionHandler);
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
+
+// const slots = await getAllTimeSlots(new Date("2027-03-11T10:30:00.000Z"), new Date("2027-03-12T19:30:00.000Z"));
+// console.log(slots);
+// let slot = await getTimeSlotByStart(slots[0].startDateTime);
+// console.log(slot);
+// slot = await getTimeSlotByStart(new Date());
+// console.log(slot);
+let user = await getUserById(1);
+console.log(user);
+user = await getUserById(10);
+console.log(user);
+user = await getUserFromCredentials("mario.rossi@gmail.com", "strong_password");
+console.log(user);
+user = await getUserFromCredentials("mario.rossi@gmail.com", "wrong_password");
+console.log(user);
+// user = await createHiker("password", "Alberto Tomba", "albi.bara@gmail.com", "+39 1234123412");
+console.log(user);

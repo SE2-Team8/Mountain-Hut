@@ -10,8 +10,8 @@ db.serialize(() => {
   // TODO: maybe manage roles differently?
   db.run(`CREATE TABLE IF NOT EXISTS users (
     userId INTEGER PRIMARY KEY AUTOINCREMENT,
-    hashedPassword TEXT NOT NULL,
-    salt TEXT NOT NULL,
+    passwordHash TEXT NOT NULL,
+    passwordSalt TEXT NOT NULL,
 	role TEXT NOT NULL CHECK (role IN ('HIKER', 'EMPLOYEE', 'WARDEN')),
     fullName TEXT NOT NULL,
 	email TEXT UNIQUE NOT NULL,
@@ -23,7 +23,7 @@ db.serialize(() => {
   // dateTimess are saved as ISO strings (yyyy-mm-ddThh:mm:ssZ)  
   db.run(`CREATE TABLE IF NOT EXISTS timeSlots (
     timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
-    startDateTime UNIQUE TEXT NOT NULL,
+    startDateTime TEXT UNIQUE NOT NULL,
 	endDateTime TEXT NOT NULL
   )`);
 
@@ -39,7 +39,7 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS tables (
     tableId INTEGER PRIMARY KEY AUTOINCREMENT,
     tableNumber INTEGER NOT NULL,
-	totalSeats INTEGER NOT NULL,
+	totalSeats INTEGER NOT NULL DEFAULT 0,
 	occupiedSeats INTEGER NOT NULL DEFAULT 0,
 	timeSlotId INTEGER NOT NULL,
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)

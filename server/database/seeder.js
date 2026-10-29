@@ -2,6 +2,7 @@ import { table } from "console";
 import db from "../config/db.js";
 import crypto from "crypto";
 import { PWD_HASH_LEN, SALT_LEN } from "../repositories/userRepository.js";
+import { dateToStringISO } from "../utils/dateTimeFormatter.js";
 
 // user seeding
 const users = [
@@ -53,7 +54,7 @@ db.serialize(() => {
     users.forEach((user) => {
         db.run(
             `INSERT INTO users 
-			(hashedPassword, salt, role, fullName, email, phoneNumber, notes, emergencyContact)
+			(passwordHash, passwordSalt, role, fullName, email, phoneNumber, notes, emergencyContact)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
 				user.hashedPassword,
