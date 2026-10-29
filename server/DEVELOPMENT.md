@@ -65,6 +65,7 @@ Then run:
 1. `npm install` — installs the server's dependencies.
 2. `npm run db:migrate` — creates a fresh database.
 3. `npm run db:seed` — adds the sample data to the database.
+3. `npm run db:rebuild` — creates a fresh database and adds the sample data to the database.
 4. `node index.js` | `nodemon index.js` — starts the server.
 
 The server listens at `http://localhost:3001`. The example API route is `GET /api/users/:id`.

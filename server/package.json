@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:migrate": "node ./database/migration.js",
-    "db:seed": "node ./database/seeder.js"
+    "db:seed": "node ./database/seeder.js",
+    "db:rebuild": "node ./database/migration.js && node ./database/seeder.js"
   },
   "keywords": [],
   "author": "",
