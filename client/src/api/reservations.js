@@ -1,7 +1,8 @@
 import httpClient from "@/lib/http-client";
 
 const reservationsApi = {
-    post: (payload) => httpClient.get(`/reservations`, payload)
+    getAvailability: (date) => httpClient.get("/reservations/availability", { date }),
+    create: (payload) => httpClient.post(`/reservations`, payload)
 };
 
 export default reservationsApi;

@@ -4,28 +4,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Controller, useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
+import "../assets/css/auth.css"
+import useUserStore from "@/store/user";
 
 function PageLogin() {
   const navigate = useNavigate();
   const formSchema = zod.object({
-    username: zod.string().nonempty("Username is required"),
+    email: zod.string().nonempty("Email is required"),
+    email: zod.email("Invalid Email"),
     password: zod.string().nonempty("Password is required")
   });
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: '',
+      email: '',
       password: ''
     }
   });
 
   async function handleLogin(data) {
     const response = await api.auth.login(data);
-
-    if (response.success) navigate('/', {viewTransition: true});
+    if (response.success) {
+      useUserStore ((loggedUser)=>{
+        //change when the backend is completed
+        loggedUser.setUser(data.fullName)
+      })
+      navigate('/', {viewTransition: true})
+    }
   }
 
   return (
@@ -33,7 +41,7 @@ function PageLogin() {
       <CardHeader>
         <CardTitle>Login to your account</CardTitle>
         <CardDescription>
-          Enter your username below to login to your account
+          Enter your email below to login to your account
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -41,17 +49,17 @@ function PageLogin() {
           <FieldGroup>
 
             <Controller
-              name='username'
+              name='email'
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
 
-                  <FieldLabel htmlFor='username'>Username</FieldLabel>
+                  <FieldLabel htmlFor='email'>Email</FieldLabel>
                   <Input
                     {...field}
-                    id='username'
+                    id='email'
                     type='text'
-                    placeholder="Username"
+                    placeholder="Email"
                     aria-invalid={fieldState.invalid} />
                   {
                     fieldState.invalid
@@ -83,6 +91,7 @@ function PageLogin() {
               )} />
             <Field>
               <Button type="submit">Login</Button>
+              <Link className = 'link' to = "/auth/signup">Sign Up</Link> 
             </Field>
             
           </FieldGroup>
