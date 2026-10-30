@@ -71,14 +71,14 @@ async function createHiker(password, fullName, email, phoneNumber, notes=null, e
 
 // creates a warden and returns the new user id, throws an error if
 // a user with the same email already exists
-async function createWarden(password, fullName, email, phoneNumber, notes=null, emergencyContact=null) {
-	return await createUser("WARDEN", password, fullName, email, phoneNumber, notes, emergencyContact);
+async function createWarden(password, fullName, email, phoneNumber = "") {
+	return await createUser("WARDEN", password, fullName, email, phoneNumber, null, null);
 }
 
 // creates an employee and returns the new user id, throws an error if
 // a user with the same email already exists
-async function createEmployee(password, fullName, email, phoneNumber, notes=null, emergencyContact=null) {
-	return await createUser("EMPLOYEE", password, fullName, email, phoneNumber, notes, emergencyContact);
+async function createEmployee(password, fullName, email, phoneNumber = "") {
+	return await createUser("EMPLOYEE", password, fullName, email, phoneNumber, null, null);
 }
 
 
