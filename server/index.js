@@ -4,6 +4,9 @@ import router from './router/index.js';
 import exceptionHandler from './middlewares/ecxeptionHandler.js';
 import session from "express-session";
 import passportConfig from "./config/passportConfig.js";
+import { createHiker } from "./repositories/userRepository.js";
+import { getTimeSlotByStart, getAllTimeSlots } from "./repositories/timeslotRepository.js";
+import { createReservation } from "./repositories/reservationRepository.js";
 
 const app = express();
 const port = 3001;
@@ -93,12 +96,30 @@ app.get("/api/timeslots/:start", (req, res) => {
 
 // ----
 
-// -- apis for the tables --
-// TODO: wait for the tables' repository implementation
+// -- apis for the reservation --
+
+app.post("/api/timeslots/reservation", async (req, res) => {
+	try{
+		const { timeSlotId, userId, partySize } = req.body;
+		if (!timeSlotId || !userId || !partySize){
+			return res.status(400).json({ error: "Missing data."});
+		}
+		if (partySize <= 0) return res.status(400).json({ error: "Party size must be greater than 0."});
+
+		const reservation = await createReservation(timeSlotId, userId, partySize);
+
+		res.status(201).json({ message: "Reservation succesfully taken"});
+	}
+	catch(ex){
+		console.error("Error during reservation creation: ", ex);
+		res.status(500).json({ error: "Internal server error"});
+	}
+});
+
 // ----
 
-// -- apis for the reservation --
-// TODO: wait for the reservation repository implementation
+// -- apis for the tables --
+// TODO: wait for the tables' repository implementation
 // ----
 
 app.listen(port, () => {
