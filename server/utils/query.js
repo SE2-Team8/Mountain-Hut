@@ -20,4 +20,21 @@ function queryRun(sql, params = []) {
     });
 }
 
-export { queryAll, queryGet, queryRun }
+function withTransaction(transactionBody) {
+	return new Promise((resolve, reject) => {
+		db.serialize(async () => {
+			try {
+				await queryRun('BEGIN TRANSACTION');
+				const result = await transactionBody();
+				await queryRun('COMMIT');
+				resolve(result);
+			} catch (err) {
+				try { await queryRun('ROLLBACK'); }
+				catch (e) { err.rollbackError = e; }
+				reject(err);
+			}
+		});
+	});
+}
+
+export { queryAll, queryGet, queryRun, withTransaction }

@@ -185,9 +185,11 @@ db.serialize(() => {
 		// for each table in the list, load it on the db
 		tableLists[listIndex].forEach((table) => {
 			db.run(
-            `INSERT INTO tables (tableNumber, totalSeats, timeSLotId) VALUES (?, ?, ?)`,
+            `INSERT INTO tables (tableNumber, totalSeats, freeSeats, timeSLotId)
+			 VALUES (?, ?, ?, ?)`,
             [
 				table.number,
+				table.totalSeats,
 				table.totalSeats,
 				slotId
 			]

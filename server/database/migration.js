@@ -40,9 +40,10 @@ db.serialize(() => {
     tableId INTEGER PRIMARY KEY AUTOINCREMENT,
     tableNumber INTEGER NOT NULL,
 	totalSeats INTEGER NOT NULL DEFAULT 0,
-	occupiedSeats INTEGER NOT NULL DEFAULT 0,
+	freeSeats INTEGER NOT NULL DEFAULT 0,
 	timeSlotId INTEGER NOT NULL,
-	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
+	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId),
+	UNIQUE (timeSlotId, tableNumber)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS tableAssignments (
