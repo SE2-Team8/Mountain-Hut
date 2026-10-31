@@ -5,7 +5,7 @@ const requireRole = (...allowedRoles) => {
 		if (!req.isAuthenticated()) {
 			return responseError(res, null, 'Not Authenticated!', 401);
 		}
-		const hasRole = allowedRoles.inc(req.user.role);
+		const hasRole = allowedRoles.includes(req.user.role);
 		if (!hasRole) {
 			return responseError(res, null, 'Forbidden', 403);
 		}
@@ -13,3 +13,5 @@ const requireRole = (...allowedRoles) => {
 		return next();
 	};
 };
+
+export default requireRole;

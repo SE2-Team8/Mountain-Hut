@@ -1,5 +1,4 @@
 import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
-import { getTimeSlotByStart } from "./timeslotRepository.js";
 
 // creates a reservation and returns the created reservation id.
 // the only enforced business rules inside this method are the party size < available seats

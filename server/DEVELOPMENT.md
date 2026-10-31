@@ -69,3 +69,14 @@ Then run:
 4. `node index.js` | `nodemon index.js` — starts the server.
 
 The server listens at `http://localhost:3001`. The example API route is `GET /api/users/:id`.
+
+## Running the server tests
+
+From the `server/` directory:
+
+1. `npm install`
+2. `npm test` — runs all tests once (Vitest)
+3. `npm run test:watch` — re-runs the tests on every file change
+
+Tests live in `server/tests/` and are named `*.test.js`.
+The repository tests mock `utils/query.js`, so no database is needed.
