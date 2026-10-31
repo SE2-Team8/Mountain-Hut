@@ -12,27 +12,29 @@ import useUserStore from "@/store/user";
 
 function PageLogin() {
   const navigate = useNavigate();
+  const setUser =  useUserStore((state)=>
+      state.setUser
+    )
   const formSchema = zod.object({
-    email: zod.string().nonempty("Email is required"),
-    email: zod.email("Invalid Email"),
+    username: zod.string().nonempty("Email is required"),
+    username: zod.email("Invalid Email"),
     password: zod.string().nonempty("Password is required")
   });
   const form = useForm({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
-      email: '',
+      username: '',
       password: ''
     }
   });
-
+ 
   async function handleLogin(data) {
     const response = await api.auth.login(data);
-    if (response.success) {
-      useUserStore ((loggedUser)=>{
-        //change when the backend is completed
-        loggedUser.setUser(data.fullName)
-      })
-      navigate('/', {viewTransition: true})
+    if (response?.data?.success){
+      setUser(response.data.fullName);
+      navigate('/', {viewTransition: true}) 
     }
   }
 
@@ -49,7 +51,7 @@ function PageLogin() {
           <FieldGroup>
 
             <Controller
-              name='email'
+              name='username'
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>

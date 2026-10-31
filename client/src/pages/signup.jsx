@@ -17,7 +17,7 @@ import useUserStore from "@/store/user";
 function PageSignUp() {
   const navigate = useNavigate();
   const formSchema = zod.object({
-    email: zod.email('Invalid Email'),
+    username: zod.email('Invalid Email'),
     fullName: zod.string().min(1, 'Full name is required'),
     phone: zod
       .string()
@@ -40,7 +40,7 @@ function PageSignUp() {
     mode: 'onChange',
     reValidateMode: 'onChange',
     defaultValues: {
-      email: '',
+      username: '',
       fullName: '',
       phone: '',
       emergencyPhone: '',
@@ -71,7 +71,7 @@ function PageSignUp() {
           <FieldGroup>
 
             <Controller
-              name='email'
+              name='username'
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
