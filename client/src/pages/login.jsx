@@ -32,7 +32,7 @@ function PageLogin() {
  
   async function handleLogin(data) {
     const response = await api.auth.login(data);
-    if (response?.data?.success){
+    if (response?.success ){
       setUser(response.data.fullName);
       navigate('/', {viewTransition: true}) 
     }
