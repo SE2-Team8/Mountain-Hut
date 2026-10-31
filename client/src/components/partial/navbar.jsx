@@ -34,7 +34,7 @@ function Navbar({ className, ...props }) {
 
                     </NavigationMenuList>
                 </NavigationMenu>
-                <Button variant='secondary' size='lg' className="font-semibold text-green-800" asChild>
+                <Button asChild>
                     {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
                 </Button>
             </div>

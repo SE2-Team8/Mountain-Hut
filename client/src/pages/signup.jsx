@@ -1,7 +1,9 @@
 import api from "@/api";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import PhoneInput, {isValidPhoneNumber} from "react-phone-number-input";
+import { isValidPhoneNumber } from "react-phone-number-input";
+import { PhoneInput } from "@/components/ui/phone-input"
 import "react-phone-number-input/style.css";
 import { Field, FieldError, FieldGroup, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -120,6 +122,7 @@ function PageSignUp() {
                   <MandatoryLabel htmlFor='phone'>Phone Number </MandatoryLabel>
                   <PhoneInput
                     {...field}
+                    onChange = {(value) => field.onChange (value ?? '')}
                     id='phone'
                     international
                     defaultCountry = 'IT'
@@ -142,6 +145,7 @@ function PageSignUp() {
                   <PhoneInput
                     {...field}
                     id='emergencyPhone'
+                    onChange = {(value) => field.onChange (value ?? '')}
                     international
                     defaultCountry = 'IT'
                     aria-invalid={fieldState.invalid} />
@@ -160,7 +164,7 @@ function PageSignUp() {
                 <Field data-invalid={fieldState.invalid}>
 
                   <FieldLabel htmlFor='notes'>Notes</FieldLabel>
-                  <Input
+                  <Textarea
                     {...field}
                     id='notes'
                     type='textarea'
