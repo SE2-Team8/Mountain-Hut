@@ -9,7 +9,7 @@ const reservationController = {
 		}
 		if (partySize <= 0) return responseError(res, null, "Party size must be greater than 0.", 400);
 
-		const reservation = await createReservation(timeSlotId, userId, partySize);
+		const reservation = await createReservation(userId, timeSlotId, partySize);
 
 		return responseSuccess(res, reservation, "Reservation successfully taken", 201);
     }

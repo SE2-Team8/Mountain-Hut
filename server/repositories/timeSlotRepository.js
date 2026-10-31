@@ -8,10 +8,29 @@ function TimeSlot(timeSlotId, startDateTime, endDateTime, freeSeats) {
 	this.freeSeats = freeSeats? freeSeats : 0 // if null, no free seats;
 }
 
+// returns the timeslot with the given id, or null if not found
+async function getTimeSlotById(timeSlotId) {
+    const row = await queryGet(
+		`SELECT timeSlots.*, SUM(totalSeats - occupiedSeats) as freeSeats
+		FROM timeSlots NATURAL LEFT OUTER JOIN tables
+		WHERE timeSlots.timeSlotId = ?`,
+		[timeSlotId]);
+
+    if (!row || row.timeSlotId == null) return null;
+
+    return new TimeSlot(
+		row.timeSlotId,
+		stringISOToDate(row.startDateTime),
+		stringISOToDate(row.endDateTime),
+		row.freeSeats
+	);
+}
+
+// returns the timeslot that starts at the given dateTime, or null if not found
 async function getTimeSlotByStart(startDateTime) {
 	const dateTimeString = dateToStringISO(startDateTime);
     const slotRow = await queryGet(
-		`SELECT timeSlots.*, SUM(totalSeats - occupiedSeats) as freeSeats
+		`SELECT timeSlots.*, SUM(freeSeats) as freeSeats
 		FROM timeSlots NATURAL LEFT OUTER JOIN tables
 		WHERE startDateTime = ?`,
 		[dateTimeString]);
@@ -26,10 +45,11 @@ async function getTimeSlotByStart(startDateTime) {
 	);
 }
 
+// returns all the timeslots. This method can also filter on a given dateTime range (both extremes included)
 async function getAllTimeSlots(from = null, to = null) {
     const slotRows = await queryAll(
 		`SELECT timeSlots.timeSlotId, startDateTime, endDateTime,
-		SUM(totalSeats - occupiedSeats) AS freeSeats
+		SUM(freeSeats) AS freeSeats
 		FROM timeSlots NATURAL LEFT OUTER JOIN tables
 		GROUP BY timeSlots.timeSlotId`);
 
@@ -52,7 +72,6 @@ async function getAllTimeSlots(from = null, to = null) {
 
 // TODO: createTimeSlot
 // TODO: copy table set configuration from 1 slot to another
-
 // TODO (later): deleteTimeSlot, updateTimeSlot
 
-export { TimeSlot, getTimeSlotByStart, getAllTimeSlots };
+export { TimeSlot, getTimeSlotById, getTimeSlotByStart, getAllTimeSlots };

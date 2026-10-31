@@ -1,9 +1,50 @@
 import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
 
+function Reservation(reservId, timeSlotId, userId, partySize) {
+	this.reservId = reservId;
+	this.timeSlotId = timeSlotId;
+	this.userId = userId;
+	this.partySize = partySize;
+}
+
+// returns the reservation with the given id, or null if not found
+async function getReservationById(reservId) {
+	const row = await queryGet(
+		`SELECT * FROM reservations
+		WHERE reservId = ?`, [reservId]
+	);
+
+	if (!row)
+		return null;
+
+	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize);
+}
+
+// returns an array of reservations for a specific userId. This method can also filter by timeSlotId, if specified
+async function getReservationsByUser(userId, timeSlotId = null) {
+	let reservRows = await queryAll(
+		`SELECT * FROM reservations
+		WHERE userId = ?`, [userId]
+	);
+
+	if (!reservRows)
+		return null;
+
+	if (timeSlotId != null)
+		reservRows = reservRows.filter((row) => row.timeSlotId == timeSlotId);
+
+	return reservRows.map((row) => new Reservation(
+		row.reservId,
+		row.timeSlotId,
+		row.userId,
+		row.partySize
+	));
+}
+
 // creates a reservation and returns the created reservation id.
 // the only enforced business rules inside this method are the party size < available seats
 // (other rules such as reservation time or author of the reservation must be checked somewhere else)
-async function createReservation(timeSlotId, userId, partySize) {
+async function createReservation(userId, timeSlotId, partySize) {
 	return await withTransaction(async () => {
 		// select all tables that have some free seats, sorted by increasing number of free seats
 		let freeTables = await queryAll(
@@ -68,7 +109,7 @@ async function createReservation(timeSlotId, userId, partySize) {
 		if (max_tries <= 0)
 			throw new Error("Could not select tables for reservation!");
 
-		console.log(reservTables);
+		// console.log(reservTables);
 
 		// occupy selected seats
 		// create table assignments
@@ -106,4 +147,4 @@ async function createReservation(timeSlotId, userId, partySize) {
 
 // TODO (later): deleteReservation, updateReservation
 
-export { createReservation };
+export { Reservation, getReservationById, getReservationsByUser, createReservation };
