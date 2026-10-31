@@ -1,4 +1,4 @@
-import { getTimeSlotByStart, getAllTimeSlots } from "../repositories/timeslotRepository.js";
+import { getTimeSlotByStart, getAllTimeSlots } from "../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 
 const timeSlotController = {
