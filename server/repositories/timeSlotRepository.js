@@ -11,7 +11,7 @@ function TimeSlot(timeSlotId, startDateTime, endDateTime, freeSeats) {
 // returns the timeslot with the given id, or null if not found
 async function getTimeSlotById(timeSlotId) {
     const row = await queryGet(
-		`SELECT timeSlots.*, SUM(totalSeats - occupiedSeats) as freeSeats
+		`SELECT timeSlots.*, SUM(freeSeats) as freeSeats
 		FROM timeSlots NATURAL LEFT OUTER JOIN tables
 		WHERE timeSlots.timeSlotId = ?`,
 		[timeSlotId]);
