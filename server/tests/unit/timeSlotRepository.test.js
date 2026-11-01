@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("../../utils/query.js", () => ({ queryAll: vi.fn(), queryGet: vi.fn() }));
 
 import { queryAll, queryGet } from "../../utils/query.js";
-import { getAllTimeSlots, getTimeSlotByStart } from "../../repositories/timeSlotRepository.js";
+import { getAllTimeSlots, getTimeSlotByStart, getTimeSlotById } from "../../repositories/timeSlotRepository.js";
 
 const rows = [
   { timeSlotId: 1, startDateTime: "2027-03-10T12:30:00Z", endDateTime: "2027-03-10T14:30:00Z", freeSeats: 20 },
@@ -61,5 +61,27 @@ describe("getTimeSlotByStart", () => {
   it("returns null when the slot does not exist", async () => {
     queryGet.mockResolvedValue(undefined);
     expect(await getTimeSlotByStart(new Date("2027-03-10T12:30:00Z"))).toBeNull();
+  });
+});
+
+describe("getTimeSlotById", () => {
+  it("only uses columns that exist in the schema", async () => {
+    queryGet.mockResolvedValue(rows[0]);
+    await getTimeSlotById(1);
+
+    expect(queryGet.mock.calls[0][0]).not.toMatch(/occupiedSeats/);
+  });
+
+  it("returns the slot with Date objects", async () => {
+    queryGet.mockResolvedValue(rows[0]);
+    const slot = await getTimeSlotById(1);
+
+    expect(slot.timeSlotId).toBe(1);
+    expect(slot.startDateTime).toBeInstanceOf(Date);
+  });
+
+  it("returns null when the slot does not exist", async () => {
+    queryGet.mockResolvedValue(undefined);
+    expect(await getTimeSlotById(99)).toBeNull();
   });
 });
