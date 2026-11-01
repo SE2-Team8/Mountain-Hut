@@ -113,14 +113,14 @@ async function createReservation(userId, timeSlotId, partySize) {
 
 		// occupy selected seats
 		// create table assignments
-		reservTables.forEach(async ({id, seatsToTake}) => {
+		for (const { id, seatsToTake } of reservTables) {
 			await queryRun(
 				`UPDATE tables
 				SET freeSeats = freeSeats - ?
 				WHERE tableId = ?;`, 
 				[seatsToTake, id]
 			);
-		});
+		};
 
 		// create reservation
 		const queryRes = await queryRun(
@@ -131,13 +131,13 @@ async function createReservation(userId, timeSlotId, partySize) {
 		const reservId = queryRes.lastID;
 		
 		// create table assignments
-		reservTables.forEach(async ({id, seatsToTake}) => {
+		for (const { id, seatsToTake } of reservTables) {
 			await queryRun(
 				`INSERT INTO tableAssignments
 				(tableId, reservId, occupiedSeats) VALUES (?, ?, ?)`, 
 				[id, reservId, seatsToTake]
 			);
-		});
+		};
 
 		// return reservation id
 		return reservId;
