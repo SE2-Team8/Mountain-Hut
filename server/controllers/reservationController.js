@@ -6,12 +6,10 @@ const reservationController = {
     create: async (req, res) => {
         const { timeSlotId, partySize } = req.body;
 		const userId = req.user.userId;
-		if (!timeSlotId || !partySize){
-			return responseError(res, null, "Missing data.", 400);
-		}
-		if (partySize <= 0) return responseError(res, null, "Party size must be greater than 0.", 400);
 
 		const timeSlot = await getTimeSlotById(timeSlotId);
+		if (!timeSlot) return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
+
 		const startMs = timeSlot.startDateTime.getTime();
 		const nowMs = Date.now();
 
