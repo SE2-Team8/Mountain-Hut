@@ -24,4 +24,4 @@ function checkBodyLength(expectedLength){
     }
 }
 
-export default {validator, checkBodyLength};
+export {validator, checkBodyLength};
