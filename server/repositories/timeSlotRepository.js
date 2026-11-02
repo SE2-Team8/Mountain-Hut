@@ -61,11 +61,14 @@ async function getAllTimeSlots(from = null, to = null) {
 	));
 
 	// filter to dateTime range
-    if (from)
-		slots = slots.filter((slot) => slot.startDateTime.getTime() >= from.getTime());
-	
-	if (to)
-		slots = slots.filter((slot) => slot.startDateTime.getTime() <= to.getTime());
+	if (from) {
+        const fromDate = from instanceof Date ? from : new Date(from);
+        slots = slots.filter((slot) => slot.startDateTime.getTime() >= fromDate.getTime());
+    }
+    if (to) {
+        const toDate = to instanceof Date ? to : new Date(to);
+        slots = slots.filter((slot) => slot.startDateTime.getTime() <= toDate.getTime());
+    }
 
 	return slots;
 }
