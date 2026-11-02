@@ -8,14 +8,14 @@ import "react-phone-number-input/style.css";
 import { Field, FieldError, FieldGroup, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Controller, useForm} from "react-hook-form";
-import { useNavigate } from "react-router";
 import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../assets/css/auth.css"
-import useUserStore from "@/store/user";
+import { useState } from "react";
+import { toast } from "sonner";
 
 function PageSignUp() {
-  const navigate = useNavigate();
+  const [isSignedUp, setIsSignedUp] = useState(false);
   const formSchema = zod.object({
     username: zod.email('Invalid Email'),
     fullName: zod.string().min(1, 'Full name is required'),
@@ -51,10 +51,18 @@ function PageSignUp() {
   });
 
   async function handleSignUp(data) {
-    const response = await api.auth.signUp(data);
-    if (response.success) {
-
-      navigate('/', {viewTransition: true})
+    const body = {
+      psw : data.password,
+      fullName : data.fullName,
+      email : data.username,
+      phone : data.phone,
+      emergencyContact : data.emergencyPhone,
+      notes : data.notes
+    }
+    const response = await api.auth.signUp(body);
+    if (response?.success) {
+      setIsSignedUp(true);
+      toast.info("You have signed up successfully");
     }
   }
 
@@ -68,6 +76,7 @@ function PageSignUp() {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(handleSignUp)}>
+          <fieldset disabled = {form.formState.isSubmitting || isSignedUp} className="contents">
           <FieldGroup>
 
             <Controller
@@ -234,9 +243,12 @@ function PageSignUp() {
             </Field>
             
           </FieldGroup>
+          </fieldset>
         </form>
       </CardContent>
     </Card>
   )
+    
+
 }
 export default PageSignUp;
