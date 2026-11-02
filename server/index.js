@@ -19,6 +19,9 @@ app.use(express.json());
 app.use('/api', router);
 app.use(exceptionHandler);
 
+if (process.env.NODE_ENV !== "test")
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
+
+export default app;
