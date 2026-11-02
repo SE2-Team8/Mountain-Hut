@@ -3,8 +3,8 @@ import { responseError, responseSuccess } from "../utils/response.js";
 
 const authController = {
     register: async (req, res) => {
-        const { psw, fullName, email, phone, notes, emergencyContact } = req.body;
-        const newUser = await createHiker(psw, fullName, email, phone, notes, emergencyContact);
+        const { email, password, fullName, phone, notes, emergencyContact } = req.body;
+        const newUser = await createHiker(password, fullName, email, phone, notes, emergencyContact);
 
         req.login(newUser, (err) => {
             if (err) throw new Error("Error during automatic login");

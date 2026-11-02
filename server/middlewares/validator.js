@@ -1,5 +1,6 @@
-import { validationResult } from "express-validator";
+import { check, validationResult } from "express-validator";
 import { responseError } from "../utils/response.js";
+import { response } from "express";
 
 function validator(rules) {
     return async (req, res, next) => {
@@ -13,4 +14,14 @@ function validator(rules) {
     };
 };
 
-export default validator;
+function checkBodyLength(expectedLength){
+    return (req, res, next) => {
+        const actualLength = Object.keys(req.body).length;
+        if (actualLength !== expectedLength){
+            return responseError(res, null, `Body must contain exactly ${expectedLength} fields`, 400);
+        }
+        next();
+    }
+}
+
+export default {validator, checkBodyLength};
