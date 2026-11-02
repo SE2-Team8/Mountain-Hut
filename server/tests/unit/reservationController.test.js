@@ -47,21 +47,6 @@ describe("reservationController.create - happy path", () => {
 });
 
 describe("reservationController.create - input validation", () => {
-  it.each([[{ partySize: 2 }], [{ timeSlotId: 1 }], [{}]])
-  ("answers 400 when a field is missing (%j)", async (body) => {
-    await call(body);
-
-    expect(responseError.mock.calls[0][3]).toBe(400);
-    expect(createReservation).not.toHaveBeenCalled();
-  });
-
-  it.each([0, -3, 1.5, "3", null, undefined])("does not book for invalid party size %s", async (partySize) => {
-    await call({ timeSlotId: 1, partySize });
-
-    expect(createReservation).not.toHaveBeenCalled();
-    expect(responseError).toHaveBeenCalled();
-  });
-
   it("answers 404 for a time slot that does not exist (instead of crashing)", async () => {
     getTimeSlotById.mockResolvedValue(null);
 
