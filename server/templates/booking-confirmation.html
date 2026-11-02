@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmation</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; color: #333;">
+
+  <h2>Hello, {{guestName}}!</h2>
+  <p>Your booking at <strong>Mountain Hut</strong> is confirmed.</p>
+  <p><strong>Booking reference:</strong> {{bookingReference}}</p>
+  <p>
+    <strong>Check-in:</strong> {{checkIn}}
+    <br>
+    <strong>Check-out:</strong> {{checkOut}}
+  </p>
+  <h3>Booking Summary</h3>
+  <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
+    <thead>
+      <tr style="background-color: #f2f2f2;">
+        <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">
+          Description
+        </th>
+        <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">
+          Amount
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td style="border: 1px solid #ddd; padding: 10px;">
+          {{this.description}}
+        </td>
+        <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">
+          €{{this.price}}
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <h3>Total: €{{total}}</h3>
+  <p>Thank you for choosing Mountain Hut!</p>
+
+</body>
+
+</html>
