@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 import request from "supertest";
-
+const { sendMail } = vi.hoisted(() => ({ sendMail: vi.fn() }));
+vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail }) } }));
 import app from "../../index.js";
 import db from "../../config/db.js";
 import { createHiker } from "../../repositories/userRepository.js";
@@ -20,6 +21,7 @@ beforeAll(initSchema);
 beforeEach(async () => {
 	muteConsoleError();
 	await resetDb();
+	sendMail.mockResolvedValue({ messageId: "test-id", accepted: [], rejected: [] });
 	freezeTime(NOW);
 	slot1 = await getTimeSlotId(S1.startISO);
 	slot2 = await getTimeSlotId(S2.startISO);

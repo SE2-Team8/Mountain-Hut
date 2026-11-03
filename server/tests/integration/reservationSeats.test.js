@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 import request from "supertest";
+
+const { sendMail } = vi.hoisted(() => ({ sendMail: vi.fn() }));
+vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail }) } }));
 import app from "../../index.js";
 import db from "../../config/db.js";
-import { queryRun } from "../../utils/query.js";
 import {
 	initSchema, resetDb, loginAsRole, getTimeSlotId, getReservations, getAssignments, getFreeSeats, getTables, getSeatLedger,
 	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, SLOTS,
@@ -23,6 +25,7 @@ beforeAll(initSchema);
 beforeEach(async () => {
 	muteConsoleError();
 	await resetDb();
+	sendMail.mockResolvedValue({ messageId: "test-id", accepted: [], rejected: [] });
 	freezeTime("2027-03-09T12:30:00Z");
 	slot1 = await getTimeSlotId(S1.startISO);
 	slot4 = await getTimeSlotId(S4.startISO);
