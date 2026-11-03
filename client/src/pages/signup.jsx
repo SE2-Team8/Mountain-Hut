@@ -14,10 +14,12 @@ import "../assets/css/auth.css"
 import { useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import useUserStore from "@/store/user";
 
 function PageSignUp() {
   const navigate = useNavigate();
   const [isSignedUp, setIsSignedUp] = useState(false);
+  const setUser = useUserStore((state) => state.setUser)
   const formSchema = zod.object({
     username: zod.email('Invalid Email'),
     fullName: zod.string().min(1, 'Full name is required'),
@@ -64,6 +66,9 @@ function PageSignUp() {
     const response = await api.auth.signUp(body);
     if (response?.success) {
       setIsSignedUp(true);
+      setUser({
+        fullName: data.fullName
+      });
       toast.info("You have signed up successfully");
       navigate('/', {viewTransition: true});
     }
