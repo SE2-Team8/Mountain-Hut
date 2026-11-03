@@ -21,11 +21,11 @@ function Navbar({ className, ...props }) {
         navigate('/')
     }
     return (
-        <nav className="bg-background fixed w-full z-20 top-0 start-0 border-b border-default">
+        <nav className="bg-background sticky w-full z-20 top-0 start-0 border-b border-default">
             <div className="max-w-screen-2xl flex flex-wrap items-center justify-between mx-auto p-4">
 
                 <Link to="/" className="flex items-center space-x-3" viewTransition>
-                    <img src={logo} className="h-7" alt="Logo" />
+                    <img src={logo} className="h-17" alt="Logo" />
                 </Link>
                 <NavigationMenu>
                     <NavigationMenuList>
@@ -39,16 +39,16 @@ function Navbar({ className, ...props }) {
                         <NavigationMenuItem>
                             <NavigationMenuLink asChild>
                                 {location.pathname !== '/reservations' && <Link to="/reservations" viewTransition>Reservations</Link>}
-                            </NavigationMenuLink>
+                            </NavigationMenuLink>   
                         </NavigationMenuItem>
                     </NavigationMenuList>
                 </NavigationMenu>
                 {
                 user == null ?(
-                <Button asChild>
+                <Button size= 'sm' asChild >
                     {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
                 </Button>) : (
-                <><Button onClick={handleLogout}>Logout</Button>
+                <><Button size= 'sm' onClick={handleLogout}>Logout</Button>
                 <h2>Welcome {user.fullName}</h2>
                 </>
                 )

@@ -7,7 +7,8 @@ const axiosInstance = axios.create({
     withCredentials: true
 });
 
-function handleError(error) {
+function handleError(error, {silent = false} = {}) {
+    if (silent) return;
     switch (error.response?.status) {
         case 401:
             toast.error(error.response?.data?.message || "401 Unauthorized");
@@ -31,13 +32,13 @@ function handleError(error) {
 };
 
 const httpClient = {
-    get: async (endpoint, params = {}) => {
+    get: async (endpoint, params = {}, options = {}) => {
         try {
             const response = await axiosInstance.get(endpoint, { params });
 
             return response.data;
         } catch (error) {
-            handleError(error);
+            handleError(error, options);
 
             return error;
         }

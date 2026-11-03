@@ -6,7 +6,7 @@ function LayoutDefault({ className, ...props }) {
         <>
 
             <Navbar />
-            <main className='max-w-screen-2xl mx-auto pt-24 pb-4 px-4'>
+            <main className='max-w-screen-2xl mx-auto pb-4 px-4'>
                 <Outlet />
             </main>
 
