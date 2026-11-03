@@ -1,10 +1,11 @@
-import { createHiker } from "../repositories/userRepository.js";
+import { createHiker, getUserById } from "../repositories/userRepository.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 
 const authController = {
     register: async (req, res) => {
         const { email, password, fullName, phone, notes, emergencyContact } = req.body;
-        const newUser = await createHiker(password, fullName, email, phone, notes, emergencyContact);
+        const newUserId = await createHiker(password, fullName, email, phone, notes, emergencyContact);
+        const newUser = await getUserById(newUserId);
 
         req.login(newUser, (err) => {
             if (err) throw new Error("Error during automatic login");
