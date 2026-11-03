@@ -7,14 +7,16 @@ import { PhoneInput } from "@/components/ui/phone-input"
 import "react-phone-number-input/style.css";
 import { Field, FieldError, FieldGroup, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Controller, useForm} from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../assets/css/auth.css"
 import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 
 function PageSignUp() {
+  const navigate = useNavigate();
   const [isSignedUp, setIsSignedUp] = useState(false);
   const formSchema = zod.object({
     username: zod.email('Invalid Email'),
@@ -31,10 +33,10 @@ function PageSignUp() {
     password: zod.string().min(1, 'Password is required'),
     repeatPassword: zod.string().min(1, 'Repeat your password'),
   })
-  .refine((data) => data.password === data.repeatPassword, {
-    message: 'Passwords do not match',
-    path: ['repeatPassword'],
-  });
+    .refine((data) => data.password === data.repeatPassword, {
+      message: 'Passwords do not match',
+      path: ['repeatPassword'],
+    });
   const form = useForm({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -52,17 +54,18 @@ function PageSignUp() {
 
   async function handleSignUp(data) {
     const body = {
-      psw : data.password,
-      fullName : data.fullName,
-      email : data.username,
-      phone : data.phone,
-      emergencyContact : data.emergencyPhone,
-      notes : data.notes
+      password: data.password,
+      fullName: data.fullName,
+      email: data.username,
+      phone: data.phone,
+      emergencyContact: data.emergencyPhone,
+      notes: data.notes
     }
     const response = await api.auth.signUp(body);
     if (response?.success) {
       setIsSignedUp(true);
       toast.info("You have signed up successfully");
+      navigate('/', {viewTransition: true});
     }
   }
 
@@ -76,179 +79,179 @@ function PageSignUp() {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(handleSignUp)}>
-          <fieldset disabled = {form.formState.isSubmitting || isSignedUp} className="contents">
-          <FieldGroup>
+          <fieldset disabled={form.formState.isSubmitting || isSignedUp} className="contents">
+            <FieldGroup>
 
-            <Controller
-              name='username'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+              <Controller
+                name='username'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <MandatoryLabel htmlFor='email'>Email</MandatoryLabel>
-                  <Input
-                    {...field}
-                    id='email'
-                    type='text'
-                    placeholder="Email"
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                    <MandatoryLabel htmlFor='email'>Email</MandatoryLabel>
+                    <Input
+                      {...field}
+                      id='email'
+                      type='text'
+                      placeholder="Email"
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-              )} />
+                  </Field>
+                )} />
 
-            <Controller
-              name='fullName'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+              <Controller
+                name='fullName'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <MandatoryLabel htmlFor='fullName'> Full Name</MandatoryLabel>
-                  <Input
-                    {...field}
-                    id='fullName'
-                    type='text'
-                    placeholder='John Doe'
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                    <MandatoryLabel htmlFor='fullName'> Full Name</MandatoryLabel>
+                    <Input
+                      {...field}
+                      id='fullName'
+                      type='text'
+                      placeholder='John Doe'
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-            )} />
-            <Controller
-              name='phone'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                  </Field>
+                )} />
+              <Controller
+                name='phone'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <MandatoryLabel htmlFor='phone'>Phone Number </MandatoryLabel>
-                  <PhoneInput
-                    {...field}
-                    onChange = {(value) => field.onChange (value ?? '')}
-                    id='phone'
-                    international
-                    defaultCountry = 'IT'
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                    <MandatoryLabel htmlFor='phone'>Phone Number </MandatoryLabel>
+                    <PhoneInput
+                      {...field}
+                      onChange={(value) => field.onChange(value ?? '')}
+                      id='phone'
+                      international
+                      defaultCountry='IT'
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-            )} />
-            <Controller
-              name='emergencyPhone'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                  </Field>
+                )} />
+              <Controller
+                name='emergencyPhone'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <FieldLabel htmlFor='emergencyPhone'>Emergency Phone Number</FieldLabel>
-                  <PhoneInput
-                    {...field}
-                    id='emergencyPhone'
-                    onChange = {(value) => field.onChange (value ?? '')}
-                    international
-                    defaultCountry = 'IT'
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                    <FieldLabel htmlFor='emergencyPhone'>Emergency Phone Number</FieldLabel>
+                    <PhoneInput
+                      {...field}
+                      id='emergencyPhone'
+                      onChange={(value) => field.onChange(value ?? '')}
+                      international
+                      defaultCountry='IT'
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-            )} />
-            <Controller
-              name='notes'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                  </Field>
+                )} />
+              <Controller
+                name='notes'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <FieldLabel htmlFor='notes'>Notes</FieldLabel>
-                  <Textarea
-                    {...field}
-                    id='notes'
-                    type='textarea'
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                    <FieldLabel htmlFor='notes'>Notes</FieldLabel>
+                    <Textarea
+                      {...field}
+                      id='notes'
+                      type='textarea'
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-              )} />
-            <Controller
-              name='password'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                  </Field>
+                )} />
+              <Controller
+                name='password'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <MandatoryLabel htmlFor='password'>Password</MandatoryLabel>
-                  <Input
-                    {...field}
-                    id='password'
-                    type='password'
-                    placeholder="Password"
-                    onChange = {(e)=>{
+                    <MandatoryLabel htmlFor='password'>Password</MandatoryLabel>
+                    <Input
+                      {...field}
+                      id='password'
+                      type='password'
+                      placeholder="Password"
+                      onChange={(e) => {
                         field.onChange(e)
                         if (form.getValues('repeatPassword'))
-                            form.trigger('repeatPassword')
-                    }}
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                          form.trigger('repeatPassword')
+                      }}
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-              )} />
-            <Controller
-              name='repeatPassword'
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                  </Field>
+                )} />
+              <Controller
+                name='repeatPassword'
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
 
-                  <MandatoryLabel htmlFor='repeatPassword'>Repeat Password</MandatoryLabel>
-                  <Input
-                    {...field}
-                    id='repeatPassword'
-                    type='password'
-                    placeholder="Repeat Password"
-                    onChange = {(e)=>{
+                    <MandatoryLabel htmlFor='repeatPassword'>Repeat Password</MandatoryLabel>
+                    <Input
+                      {...field}
+                      id='repeatPassword'
+                      type='password'
+                      placeholder="Repeat Password"
+                      onChange={(e) => {
                         field.onChange(e)
                         form.trigger('repeatPassword')
-                    }}
-                    aria-invalid={fieldState.invalid} />
-                  {
-                    fieldState.invalid
-                    &&
-                    <FieldError errors={[fieldState.error]} />
-                  }
+                      }}
+                      aria-invalid={fieldState.invalid} />
+                    {
+                      fieldState.invalid
+                      &&
+                      <FieldError errors={[fieldState.error]} />
+                    }
 
-                </Field>
-              )} />
+                  </Field>
+                )} />
 
-            <Field>
-              <Button type="submit">Sign Up</Button>
-            </Field>
-            
-          </FieldGroup>
+              <Field>
+                <Button type="submit">Sign Up</Button>
+              </Field>
+
+            </FieldGroup>
           </fieldset>
         </form>
       </CardContent>
     </Card>
   )
-    
+
 
 }
 export default PageSignUp;
