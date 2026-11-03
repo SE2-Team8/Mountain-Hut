@@ -6,11 +6,17 @@ import Page404 from "@/pages/404";
 import PageLogin from "@/pages/login";
 import PageReservations from "@/pages/reservations";
 import PageSignUp from "@/pages/signup";
+import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
+import auth from "@/middlewares/auth";
 
 const router = createBrowserRouter([
     {
         Component: LayoutDefault,
+        loader: async() =>{
+            await useUserStore.getState().getAuthenticatedUser();
+            return null
+        },
         HydrateFallback: () => (
             <div className="flex h-screen w-full items-center justify-center bg-background">
                 <p className="text-muted-foreground font-medium animate-pulse">Loading app...</p>
@@ -20,28 +26,27 @@ const router = createBrowserRouter([
             {
                 index: true,
                 Component: PageIndex,
-                // Once you have completed the auth middleware, you can use it like this:
-                // middleware: [auth],
+                //middleware: [auth],
             },
             {
                 path: 'reservations',
                 Component: PageReservations,
-                // middleware: [auth],
+                middleware: [auth],
+            },
+        ]
+    },
+
+    {
+        Component: LayoutAuth,
+        children: [
+            {
+                path: 'auth/login',
+                Component: PageLogin
             },
             {
-                path: '/auth',
-                Component: LayoutAuth,
-                children: [
-                    {
-                        path: 'login',
-                        Component: PageLogin
-                    },
-                    {
-                        path: 'signup',
-                        Component: PageSignUp
-                    }
-                ]
-            },
+                path: 'auth/signup',
+                Component: PageSignUp
+            }
         ]
     },
 

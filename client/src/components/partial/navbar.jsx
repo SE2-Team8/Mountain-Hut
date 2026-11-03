@@ -1,5 +1,5 @@
 import logo from '@/assets/img/LogoName.png';
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import api from '@/api'
 import {
     NavigationMenu,
@@ -12,11 +12,13 @@ import useUserStore from '@/store/user';
 
 function Navbar({ className, ...props }) {
     const location = useLocation(); 
+    const navigate = useNavigate();
     const user = useUserStore((state)=>state.user)
     const setUser = useUserStore((state)=>state.setUser)
     async function handleLogout(){
         await api.auth.logout();
         setUser(null)
+        navigate('/')
     }
     return (
         <nav className="bg-background fixed w-full z-20 top-0 start-0 border-b border-default">
@@ -47,7 +49,7 @@ function Navbar({ className, ...props }) {
                     {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
                 </Button>) : (
                 <><Button onClick={handleLogout}>Logout</Button>
-                <h2>Welcome {user}</h2>
+                <h2>Welcome {user.fullName}</h2>
                 </>
                 )
                 }

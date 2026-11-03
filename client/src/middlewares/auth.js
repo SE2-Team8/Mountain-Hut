@@ -1,16 +1,10 @@
-async function auth({ context }, next) {
+import useUserStore from "@/store/user";
+import { redirect } from "react-router";
+async function auth(_, next) {
 
-    /* 
-    Write actual auth logic here(I wrote `await next();` temporarily to pass the authectication).
-    For example, if you are using jwt token saved in user store, it would be something like this:
         const user = await useUserStore.getState().getAuthenticatedUser();
-
         if (!user) throw redirect("/auth/login");
-
         await next();
-     */
-
-    await next();
 }
 
 export default auth;
