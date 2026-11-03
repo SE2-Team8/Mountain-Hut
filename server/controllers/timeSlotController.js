@@ -11,7 +11,7 @@ const timeSlotController = {
     },
 
     getByStart: async (req, res) => {
-        const start = req.params.start;
+        const start = req.params.start instanceof Date ? req.params.start : new Date(req.params.start);
         const slot = await getTimeSlotByStart(start);
         if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
 
