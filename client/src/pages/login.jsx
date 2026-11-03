@@ -34,7 +34,7 @@ function PageLogin() {
     const response = await api.auth.login(data);
     if (response?.success ){
       setUser(response.data.fullName);
-      navigate('/', {viewTransition: true}) 
+      navigate('/', {viewTransition: true});
     }
   }
 
