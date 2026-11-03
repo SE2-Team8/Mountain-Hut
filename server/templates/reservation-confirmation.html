@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmation</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; color: #333;">
+
+  <h2>Hello, {{user.fullName}}!</h2>
+  <p>Your reservation at <strong>Mountain Hut</strong> is confirmed.</p>
+  <p><strong>Reservation number:</strong> {{reservation.reservId}}</p>
+  <p><strong>Party size:</strong> {{reservation.partySize}}</p>
+  <p>
+    <strong>Time slot starts:</strong> {{timeSlot.startDateTime}}
+    <br>
+    <strong>Time slot ends:</strong> {{timeSlot.endDateTime}}
+  </p>
+  <p>Thank you for choosing Mountain Hut!</p>
+
+</body>
+
+</html>
