@@ -82,11 +82,11 @@ async function getAllTimeSlots(from = null, to = null) {
 async function createTimeSlot(from, to, tableList = null, timeSlotIdCopy = null){
 	return await withTransaction(async () => {
 		if (!tableList && !timeSlotIdCopy) throw new Error("Both tableList or timeSLotIdCopy cannot be empty together");
-		
+
 		const queryRes = await queryRun(
 			`INSERT INTO timeSlots
 			(startDateTime, endDateTime) VALUES (?, ?)`,
-			[from, to]
+			[dateToStringISO(from), dateToStringISO(to)]
 		);
 		const timeSlotId = queryRes.lastID;
 
