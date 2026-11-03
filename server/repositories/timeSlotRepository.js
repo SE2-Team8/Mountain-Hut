@@ -1,4 +1,4 @@
-import { queryAll, queryGet } from "../utils/query.js";
+import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
 import { dateToStringISO, stringISOToDate } from "../utils/dateTimeFormatter.js";
 
 function TimeSlot(timeSlotId, startDateTime, endDateTime, freeSeats) {
@@ -73,8 +73,52 @@ async function getAllTimeSlots(from = null, to = null) {
 	return slots;
 }
 
-// TODO: createTimeSlot
-// TODO: copy table set configuration from 1 slot to another
+// this function create a new time slot, with the set of tables
+// for the set of table we have two options:
+// 1. we give in input a list of tables like [{ tableNumber: 1, totalSeats: 10 }, { tableNumber: 2, totalSeats: 5 }]
+// 2. we give in input a timeSlotId from which we will copy the table set
+// be aware that both inputs cannot be null together
+// and if they are bot not null, the timeSlotIdCopy will be used, not the tableList
+async function createTimeSlot(from, to, tableList = null, timeSlotIdCopy = null){
+	return await withTransaction(async () => {
+		if (!tableList && !timeSlotIdCopy) throw new Error("Both tableList or timeSLotIdCopy cannot be empty together");
+		
+		const queryRes = await queryRun(
+			`INSERT INTO timeSlots
+			(startDateTime, endDateTime) VALUES (?, ?)`,
+			[from, to]
+		);
+		const timeSlotId = queryRes.lastID;
+
+		const copy = timeSlotIdCopy == null ? false : true
+		if (copy){
+				const tablesList = await queryAll(
+				`SELECT tableId, tableNumber, totalSeats
+				FROM tables
+				WHERE timeSlotId = ?`,
+				[timeSlotIdCopy]
+        	);
+
+			for (const {tableNumber, totalSeats} of tablesList){
+				await queryRun(
+					`INSERT INTO tables
+					(tableNumber, totalSeats, freeSeats, timeSlotId) VALUES (?, ?, ?, ?)`,
+					[tableNumber, totalSeats, totalSeats, timeSlotId]
+				);
+			}
+		} else{
+			for (const {tableNumber, totalSeats} of tableList){
+				await queryRun(
+					`INSERT INTO tables
+					(tableNumber, totalSeats, freeSeats, timeSlotId) VALUES (?, ?, ?, ?)`,
+					[tableNumber, totalSeats, totalSeats, timeSlotId]
+				);
+			}
+		}
+		return timeSlotId;
+	});
+}
+
 // TODO (later): deleteTimeSlot, updateTimeSlot
 
-export { TimeSlot, getTimeSlotById, getTimeSlotByStart, getAllTimeSlots };
+export { TimeSlot, getTimeSlotById, getTimeSlotByStart, getAllTimeSlots, createTimeSlot };
