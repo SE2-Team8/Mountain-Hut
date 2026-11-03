@@ -118,96 +118,97 @@ describe("createTimeSlot", () => {
 	await expect(createTimeSlot(1.75, new Date(), tableList, null)).rejects.toThrow();
   });
 
-  it("error when start dateTime already exists", async () => {
-    queryGet.mockResolvedValue(rows[0]); // TODO: verify this is used as thought
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // plus 1h
-	await expect(createTimeSlot(
-		startDateTime,
-		endDateTime,
-		tableList, null)
-	).rejects.toThrow();
-  });
+  // moved because those checks are performed at controller and router level
+//   it("error when start dateTime already exists", async () => {
+//     queryGet.mockResolvedValue(rows[0]); // TODO: verify this is used as thought
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // plus 1h
+// 	await expect(createTimeSlot(
+// 		startDateTime,
+// 		endDateTime,
+// 		tableList, null)
+// 	).rejects.toThrow();
+//   });
 
-  it("error when start dateTime is after end dateTime", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = new Date(startDateTime.getTime() - 60 * 60 * 1000); // minus 1h
-	await expect(createTimeSlot(
-		startDateTime,
-		endDateTime,
-		tableList, null)
-	).rejects.toThrow();
-  });
+//   it("error when start dateTime is after end dateTime", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = new Date(startDateTime.getTime() - 60 * 60 * 1000); // minus 1h
+// 	await expect(createTimeSlot(
+// 		startDateTime,
+// 		endDateTime,
+// 		tableList, null)
+// 	).rejects.toThrow();
+//   });
 
-  it("error when start dateTime is equal to end dateTime", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = startDateTime;
-	await expect(createTimeSlot(
-		startDateTime,
-		endDateTime,
-		tableList, null)
-	).rejects.toThrow();
-  });
+//   it("error when start dateTime is equal to end dateTime", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = startDateTime;
+// 	await expect(createTimeSlot(
+// 		startDateTime,
+// 		endDateTime,
+// 		tableList, null)
+// 	).rejects.toThrow();
+//   });
 
-  it("error when tableList is empty", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = stringISOToDate(rows[0].endDateTime);
-	await expect(createTimeSlot(startDateTime, endDateTime, [], null)
-	).rejects.toThrow();
-  });
+//   it("error when tableList is empty", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = stringISOToDate(rows[0].endDateTime);
+// 	await expect(createTimeSlot(startDateTime, endDateTime, [], null)
+// 	).rejects.toThrow();
+//   });
 
-  it("error when tables have invalid seats", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = stringISOToDate(rows[0].endDateTime);
-	await expect(createTimeSlot(
-		startDateTime, endDateTime,
-		[{ tableNumber: 1, totalSeats: -5}], null)
-	).rejects.toThrow();
+//   it("error when tables have invalid seats", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = stringISOToDate(rows[0].endDateTime);
+// 	await expect(createTimeSlot(
+// 		startDateTime, endDateTime,
+// 		[{ tableNumber: 1, totalSeats: -5}], null)
+// 	).rejects.toThrow();
 
-	await expect(createTimeSlot(
-		startDateTime, endDateTime,
-		[{ tableNumber: 1, totalSeats: 0}], null)
-	).rejects.toThrow();
+// 	await expect(createTimeSlot(
+// 		startDateTime, endDateTime,
+// 		[{ tableNumber: 1, totalSeats: 0}], null)
+// 	).rejects.toThrow();
 
-	await expect(createTimeSlot(
-		startDateTime, endDateTime,
-		[{ tableNumber: 1, totalSeats: 1.5}], null)
-	).rejects.toThrow();
-  });
+// 	await expect(createTimeSlot(
+// 		startDateTime, endDateTime,
+// 		[{ tableNumber: 1, totalSeats: 1.5}], null)
+// 	).rejects.toThrow();
+//   });
 
-   it("error when table number is not unique", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = stringISOToDate(rows[0].endDateTime);
+//    it("error when table number is not unique", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = stringISOToDate(rows[0].endDateTime);
 
-	// add a duplicate table number to the list
-	let tList = [...tableList];
-	tList.push(tList[0]);
+// 	// add a duplicate table number to the list
+// 	let tList = [...tableList];
+// 	tList.push(tList[0]);
 
-	await expect(createTimeSlot(startDateTime, endDateTime, tableList, null)).rejects.toThrow();
-  });
+// 	await expect(createTimeSlot(startDateTime, endDateTime, tableList, null)).rejects.toThrow();
+//   });
 
-  it("error when copying from non existing timeslot", async () => {
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = stringISOToDate(rows[0].endDateTime);
+//   it("error when copying from non existing timeslot", async () => {
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = stringISOToDate(rows[0].endDateTime);
 
-	await expect(createTimeSlot(
-		startDateTime, endDateTime,
-		null, 1234567)
-	).rejects.toThrow();
+// 	await expect(createTimeSlot(
+// 		startDateTime, endDateTime,
+// 		null, 1234567)
+// 	).rejects.toThrow();
 
-  });
+//   });
 
-  it("error when copying table from self timeSlot", async () => {
-	queryRun.mockResolvedValue({ lastID: 42 });
-	const startDateTime = stringISOToDate(rows[0].startDateTime);
-	const endDateTime = stringISOToDate(rows[0].endDateTime);
+//   it("error when copying table from self timeSlot", async () => {
+// 	queryRun.mockResolvedValue({ lastID: 42 });
+// 	const startDateTime = stringISOToDate(rows[0].startDateTime);
+// 	const endDateTime = stringISOToDate(rows[0].endDateTime);
 
-	await expect(createTimeSlot(
-		startDateTime, endDateTime,
-		null, 42)
-	).rejects.toThrow();
+// 	await expect(createTimeSlot(
+// 		startDateTime, endDateTime,
+// 		null, 42)
+// 	).rejects.toThrow();
 
-  });
+//   });
 
   it("slotId is correct", async () => {
     queryRun.mockResolvedValue({ lastID: 42 });
