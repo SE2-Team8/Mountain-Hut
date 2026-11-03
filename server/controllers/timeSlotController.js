@@ -1,4 +1,4 @@
-import { getTimeSlotByStart, getAllTimeSlots } from "../repositories/timeSlotRepository.js";
+import { getTimeSlotByStart, getAllTimeSlots, getTimeSlotById, createTimeSlot } from "../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 
 const timeSlotController = {
@@ -16,6 +16,31 @@ const timeSlotController = {
         if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
 
         return responseSuccess(res, slot, "Time slot retrieved");
+    },
+
+    create: async (req, res) => {
+        const { startDateTime, endDateTime, tables, copyFromTimeSlotId } = req.body;
+        const from = new Date(startDateTime);
+        const to = new Date(endDateTime);
+
+        if (copyFromTimeSlotId !== undefined) { // if the employee chooses to copy, the source slot must exist
+            const source = await getTimeSlotById(copyFromTimeSlotId);
+            if (!source)
+                return responseError(res, null, `Time slot ${copyFromTimeSlotId} not found`, 404)
+        }
+
+        const existing = await getTimeSlotByStart(from);
+        if (existing)   // no other slot can start at same time
+            return responseError(res, null, `A time slot starting at that time already exists`, 409)
+
+        try {
+            const timeSlotId = await createTimeSlot(from, to, tables ?? null, copyFromTimeSlotId ?? null);
+            return responseSuccess(res, { timeSlotId }, "Time slot created", 201);
+        } catch (err) {
+            if (err.code === "SQLITE_CONSTRAINT" && /startDateTime/.test(err.message))
+                return responseError(res, null, "A time slot starting at that time already exists", 409);
+            throw err;
+        }
     }
 };
 
