@@ -12,7 +12,7 @@ const useUserStore = create((set, get) => ({
         if (get().initialized) return get().user;
 
         const response = await api.auth.getCurrentSession();
-        const user = response?.success ? response.data : null;
+        const user = response?.success ? response.data?.fullName : null;
 
         set({ user, initialized: true });
         return user;
