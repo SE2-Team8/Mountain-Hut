@@ -12,7 +12,7 @@ import {validator, checkBodyLength} from "../middlewares/validator.js"
 
 const router = express.Router();
 
-router.get('/users/:id', isAuthenticated, wrapController(userController.get));
+router.get('/users/:id', requireRole("EMPLOYEE", "WARDEN"), isAuthenticated, wrapController(userController.get));
 
 // endpoints for the current session and the user registration
 router.post('/sessions', passport.authenticate("local"), wrapController(authController.login));
