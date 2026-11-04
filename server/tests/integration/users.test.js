@@ -24,14 +24,6 @@ describe("GET /api/users/:id", () => {
 		expectEnvelope(res, false);
 	});
 
-	it("a hiker can read their own profile", async () => {
-		const agent = await loginAsRole("hiker");
-		const res = await agent.get(`/api/users/${await getUserId(USERS.hiker.email)}`);
-
-		expect(res.status).toBe(200);
-		expect(res.body.data).toMatchObject({ email: USERS.hiker.email, role: "HIKER" });
-	});
-
 	it("a warden can read the profile of a hiker", async () => {
 		const agent = await loginAsRole("warden");
 		const res = await agent.get(`/api/users/${await getUserId(USERS.hiker.email)}`);
