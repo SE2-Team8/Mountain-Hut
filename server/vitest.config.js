@@ -6,7 +6,11 @@ export default defineConfig({
       NODE_ENV: "test",
       DB_CONNECTION: ":memory:",
     },
-    clearMocks: true
-    
+    clearMocks: true,
+	coverage: {
+	  reportOnFailure: true,	
+      clean: false, // Prevent deletion of the coverage directory before running tests
+      // ... other configurations
+    }
   },
 });
