@@ -8,18 +8,22 @@ vi.mock("../../repositories/timeSlotRepository.js", () => ({
   getTimeSlotById: vi.fn(),
 }));
 vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseError: vi.fn() }));
+vi.mock("../../services/smtpService.js", () => ({
+	sendTemplateEmail: vi.fn(),
+}));
 
 import { createReservation, getReservationsByUser } from "../../repositories/reservationRepository.js";
 import { getTimeSlotById } from "../../repositories/timeSlotRepository.js";
 import { responseSuccess, responseError } from "../../utils/response.js";
 import reservationController from "../../controllers/reservationController.js";
+import { sendTemplateEmail } from "../../services/smtpService.js";
 
 const NOW = new Date("2027-03-10T10:00:00Z");
 const HOUR = 3600e3;
 const res = {};
 const SESSION_USER = { userId: 7, role: "HIKER" };
 const call = (body, user = SESSION_USER) => reservationController.create({ user, body }, res);
-const slotStartingIn = (ms) => ({ timeSlotId: 1, startDateTime: new Date(NOW.getTime() + ms) });
+const slotStartingIn = (ms) => ({ timeSlotId: 1, startDateTime: new Date(NOW.getTime() + ms), endDateTime: new Date(NOW.getTime() + 2 * ms) });
 
 beforeEach(() => {
   vi.clearAllMocks();
