@@ -24,6 +24,15 @@ async function getUserById(id) {
 		user.phoneNumber, user.notes, user.emergencyContact)
 }
 
+// retrieves a user from the given email (returns null if not found)
+async function getUserFromEmail(email) {
+	const userRow = await queryGet('SELECT * FROM users WHERE email = ?', [email]);
+	if (!userRow) return null;
+
+	return new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
+		userRow.phoneNumber, userRow.notes, userRow.emergencyContact)
+}
+
 // retrieves a user from the given credentials (returns null if not found or credentials are wrong)
 async function getUserFromCredentials(email, password) {
 	const userRow = await queryGet('SELECT * FROM users WHERE email = ?', [email]);
@@ -69,17 +78,18 @@ async function createHiker(password, fullName, email, phoneNumber, notes=null, e
 	return await createUser("HIKER", password, fullName, email, phoneNumber, notes, emergencyContact);
 }
 
-// creates a warden and returns the new user id, throws an error if
-// a user with the same email already exists
-async function createWarden(password, fullName, email, phoneNumber = "") {
-	return await createUser("WARDEN", password, fullName, email, phoneNumber, null, null);
-}
+// for future use
+// // creates a warden and returns the new user id, throws an error if
+// // a user with the same email already exists
+// async function createWarden(password, fullName, email, phoneNumber = "") {
+// 	return await createUser("WARDEN", password, fullName, email, phoneNumber, null, null);
+// }
 
-// creates an employee and returns the new user id, throws an error if
-// a user with the same email already exists
-async function createEmployee(password, fullName, email, phoneNumber = "") {
-	return await createUser("EMPLOYEE", password, fullName, email, phoneNumber, null, null);
-}
+// // creates an employee and returns the new user id, throws an error if
+// // a user with the same email already exists
+// async function createEmployee(password, fullName, email, phoneNumber = "") {
+// 	return await createUser("EMPLOYEE", password, fullName, email, phoneNumber, null, null);
+// }
 
 
-export { User, getUserById, getUserFromCredentials, createHiker, createWarden, createEmployee, PWD_HASH_LEN, SALT_LEN };
+export { User, getUserById, getUserFromEmail, getUserFromCredentials, createHiker, createWarden, createEmployee, PWD_HASH_LEN, SALT_LEN };
