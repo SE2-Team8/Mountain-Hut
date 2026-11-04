@@ -107,4 +107,5 @@ describe("GET /api/timeslots/:start", () => {
 		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
 	});
+
 });

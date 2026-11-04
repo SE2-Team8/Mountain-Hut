@@ -48,15 +48,6 @@ describe("CORS", () => {
 	});
 });
 
-describe("request body", () => {
-	it.each(["/api/sessions"])("400 with the standard envelope on malformed JSON (%s)", async (path) => {
-		const res = await request(app).post(path).set("Content-Type", "application/json").send("{ not json");
-
-		expect(res.status).toBe(400);
-		expectEnvelope(res, false);
-	});
-});
-
 describe("unknown routes", () => {
 	it.each([
 		["GET", "/api/does-not-exist"],

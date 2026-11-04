@@ -124,7 +124,6 @@ describe("POST /api/register - duplicated email", () => {
 
 		expect(res.status).toBeGreaterThanOrEqual(400);
 		expectEnvelope(res, false);
-		// expect(res.body.message).toMatch(/already exists/i); // not reliable
 		expect(await countUsers()).toBe(Object.keys(USERS).length);
 		expect((await agent.get("/api/sessions/current")).status).toBe(401);
 		await request(app).post("/api/sessions").send({ username: USERS.warden.email, password: USERS.warden.password }).expect(200);
