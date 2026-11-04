@@ -190,7 +190,7 @@ function PageReservations() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="mx-auto max-w-3xl py-8">
       
       <Card className="border-white/70 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-sm">
         <CardHeader>

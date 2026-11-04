@@ -15,6 +15,7 @@ function Navbar({ className, ...props }) {
     const navigate = useNavigate();
     const user = useUserStore((state)=>state.user)
     const setUser = useUserStore((state)=>state.setUser)
+    const canDefineCapacity = user?.role === 'EMPLOYEE' || user?.role === 'WARDEN'
     async function handleLogout(){
         await api.auth.logout();
         setUser(null)
@@ -41,6 +42,13 @@ function Navbar({ className, ...props }) {
                                 {location.pathname !== '/reservations' && <Link to="/reservations" viewTransition>Reservations</Link>}
                             </NavigationMenuLink>   
                         </NavigationMenuItem>
+                        {canDefineCapacity && location.pathname !== '/capacity' && (
+                            <NavigationMenuItem>
+                                <NavigationMenuLink asChild>
+                                    <Link to="/capacity" viewTransition>Define capacity</Link>
+                                </NavigationMenuLink>
+                            </NavigationMenuItem>
+                        )}
                     </NavigationMenuList>
                 </NavigationMenu>
                 {

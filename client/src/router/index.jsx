@@ -5,6 +5,7 @@ import PageIndex from "@/pages";
 import Page404 from "@/pages/404";
 import PageLogin from "@/pages/login";
 import PageReservations from "@/pages/reservations";
+import PageCapacity from "@/pages/capacity";
 import PageSignUp from "@/pages/signup";
 import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
@@ -31,6 +32,11 @@ const router = createBrowserRouter([
             {
                 path: 'reservations',
                 Component: PageReservations,
+                middleware: [auth],
+            },
+            {
+                path: 'capacity',
+                Component: PageCapacity,
                 middleware: [auth],
             },
         ]
