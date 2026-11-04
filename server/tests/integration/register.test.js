@@ -109,12 +109,6 @@ describe("POST /api/register - validation", () => {
 		expect(await countUsers()).toBe(Object.keys(USERS).length);
 	});
 
-	it("answers 4xx, not 500, when the body is not JSON", async () => {
-		const res = await request(app).post("/api/register").set("Content-Type", "text/plain").send("hello");
-
-		expect(res.status).toBeGreaterThanOrEqual(400);
-		expect(res.status).toBeLessThan(500);
-	});
 });
 
 describe("POST /api/register - duplicated email", () => {

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import request from "supertest";
-import { expect, vi } from "vitest";
+import { expect, Experimental, vi } from "vitest";
 import app from "../../index.js";
 import { PWD_HASH_LEN, SALT_LEN } from "../../repositories/userRepository.js";
 import { dateToStringISO } from "../../utils/dateTimeFormatter.js";
@@ -202,9 +202,33 @@ export function freezeTime(isoOrMs) {
 }
 
 export const muteConsoleError = () => vi.spyOn(console, "error").mockImplementation(() => {});
-
 export function expectEnvelope(res, success) {
 	expect(res.body).toHaveProperty("success", success);
 	expect(res.body).toHaveProperty("data");
 	expect(res.body).toHaveProperty("message", expect.any(String));
 }
+
+export async function countTimeSlots (){
+	const amount = await queryGet("SELECT COUNT(*) as cnt FROM TIMESLOTS")
+	return amount.cnt;
+}
+
+export async function countTables (){
+	const amount = await queryGet("SELECT COUNT(*) as cnt FROM TABLES ")
+	return amount.cnt;
+}
+
+export async function noTimeSlotAdded () {
+	expect(await countTimeSlots()).toEqual(SLOTS.length);
+	const expectedTables = SLOTS.reduce((sum, s) => sum + s.tables.length, 0);
+	expect(await countTables()).toEqual(expectedTables);
+}
+
+export function UTCToISOString(year = 0, month = 0, day =0, hour = 0, minutes = 0, seconds = 0, ms = 0) {
+	return dateToStringISO(new Date( Date.UTC(year, month, day, hour, minutes, seconds, ms) ))
+}
+
+export async function getTablesByTimeSlotId (id) {
+	const tables = queryAll("SELECT tableNumber from tables where timeSlotId = ?", [id])
+	return tables
+ }
