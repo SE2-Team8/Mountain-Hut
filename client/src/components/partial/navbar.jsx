@@ -1,5 +1,5 @@
 import logo from '@/assets/img/LogoName.png';
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, NavLink } from "react-router";
 import api from '@/api'
 import {
     NavigationMenu,
@@ -9,58 +9,79 @@ import {
 } from "@/components/ui/navigation-menu"
 import { Button } from "@/components/ui/button";
 import useUserStore from '@/store/user';
+import { LogIn, LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const ROLE_LABELS = { HIKER: "Hiker", EMPLOYEE: "Employee", WARDEN: "Warden" };
+
+const linkClass = ({ isActive }) => cn(
+    "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+    isActive
+        ? "bg-primary/10 text-primary"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+);
 
 function Navbar({ className, ...props }) {
     const location = useLocation(); 
     const navigate = useNavigate();
     const user = useUserStore((state)=>state.user)
     const setUser = useUserStore((state)=>state.setUser)
-    const canDefineCapacity = user?.role === 'EMPLOYEE' || user?.role === 'WARDEN'
+
+    const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'WARDEN';
+
+    const links = [
+        { to: "/", label: "Home", end: true },
+        ...(!isStaff ? [{ to: "/reservations", label: "Reservations" }] : []),
+        ...(isStaff ? [{ to: "/capacity", label: "Define capacity" }] : []),
+    ];
+    
     async function handleLogout(){
         await api.auth.logout();
         setUser(null)
         navigate('/')
     }
+
     return (
-        <nav className="bg-background sticky w-full z-20 top-0 start-0 border-b border-default">
-            <div className="max-w-screen-2xl flex flex-wrap items-center justify-between mx-auto p-4">
+        <nav className="sticky top-0 z-20 w-full border-b bg-background/90 backdrop-blur">
+            <div className="mx-auto grid h-16 max-w-screen-2xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4">
 
-                <Link to="/" className="flex items-center space-x-3" viewTransition>
-                    <img src={logo} className="h-17" alt="Logo" />
+                <Link to="/" className="flex items-center justify-self-start" viewTransition>
+                    <img src={logo} className="h-15 w-auto" alt="Mountain Hut" />
                 </Link>
-                <NavigationMenu>
+
+                <NavigationMenu className="flex-none">
                     <NavigationMenuList>
-
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                {location.pathname !== '/' && <Link to="/" viewTransition>Home</Link>}
-                            </NavigationMenuLink>
-                        </NavigationMenuItem>
-
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                {location.pathname !== '/reservations' && <Link to="/reservations" viewTransition>Reservations</Link>}
-                            </NavigationMenuLink>   
-                        </NavigationMenuItem>
-                        {canDefineCapacity && location.pathname !== '/capacity' && (
-                            <NavigationMenuItem>
+                        {links.map((link) => (
+                            <NavigationMenuItem key={link.to}>
                                 <NavigationMenuLink asChild>
-                                    <Link to="/capacity" viewTransition>Define capacity</Link>
+                                    <NavLink to={link.to} end={link.end} className={linkClass} viewTransition>
+                                        {link.label}
+                                    </NavLink>
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
-                        )}
+                        ))}
                     </NavigationMenuList>
                 </NavigationMenu>
-                {
-                user == null ?(
-                <Button size= 'sm' asChild >
-                    {location.pathname !== '/auth/login' && <Link to="/auth/login" viewTransition>Login</Link>}
-                </Button>) : (
-                <><Button size= 'sm' onClick={handleLogout}>Logout</Button>
-                <h2>Welcome {user.fullName}</h2>
-                </>
-                )
-                }
+
+                <div className="flex items-center justify-self-end gap-3">
+                    { user ? (
+                        <>
+                            <div className="hidden text-right leading-tight md:block">
+                                <p className="text-sm font-medium">{user.fullName}</p>
+                                <p className="text-xs text-muted-foreground">{ROLE_LABELS[user.role] ?? user.role}</p>
+                            </div>
+                            <Button size='sm' variant='outline' onClick={handleLogout}>
+                                <LogOut />Logout
+                            </Button>
+                        </>
+                    ) : (
+                        location.pathname !== '/auth/login' && (
+                            <Button size= 'sm' asChild >
+                                <Link to="/auth/login" viewTransition><LogIn />Login</Link>
+                            </Button>
+                        )
+                    )}
+                </div>
             </div>
         </nav>
     )
