@@ -21,6 +21,8 @@ const reservationController = {
 		const alreadyTaken = await getReservationsByUser(userId, timeSlotId);
 		if (alreadyTaken && alreadyTaken.length > 0) return responseError(res, null, "Reservation for that time slot already exist", 409);
 
+		if (timeSlot.freeSeats < partySize) return responseError(res, null, "Not enough free seats", 400);
+
 		const reservId = await createReservation(userId, timeSlotId, partySize);
 
 		await sendTemplateEmail({
