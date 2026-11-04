@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import api from "@/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import useUserStore from "@/store/user";
@@ -161,6 +161,9 @@ function PageCapacity() {
       <Card className="border-white/70 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>New service slot</CardTitle>
+          <CardDescription>
+            Choose when the meal is served, then enter the tables or copy the setup of a previous slot.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(handleCreateSlot)}>
@@ -253,7 +256,9 @@ function PageCapacity() {
                         <FieldError>{formState.errors.tables.message || formState.errors.tables.root.message}</FieldError>
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <Button type="button" variant="outline" onClick={() => append({ tableNumber: "", totalSeats: "" })}>
+                        <Button type="button" variant="outline" onClick={() => append({ 
+                          tableNumber: String(Math.max(0, ...tablesValue.map((t) => Number(t.tableNumber) || 0)) + 1),
+                          totalSeats: "" })}>
                           <Plus />Add table
                         </Button>
                         <p className="text-sm text-muted-foreground">
