@@ -1,8 +1,9 @@
 import { Link } from "react-router";
-import { ArrowRight, CalendarCheck, ClipboardList, LogIn, Mountain, Users, Utensils } from "lucide-react";
+import { ArrowRight, CalendarCheck, ClipboardList, LogIn, Users, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useUserStore from "@/store/user";
+import logoMark from "@/assets/img/Logo_removed_background.png";
 
 const FEATURES = [
     {
@@ -41,8 +42,8 @@ function PageIndex() {
     return (
         <div className="mx-auto max-w-5xl space-y-12 py-12">
             <section className="space-y-6 text-center">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Mountain className="size-7" aria-hidden="true" />
+                <div className="mx-auto flex size-30 items-center justify-center rounded-full text-primary">
+                    <img src={logoMark} alt="Mountain Hut" className="mx-auto w-auto" />
                 </div>
                 <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
                     {user ? `Welcome back, ${firstName}` : "Your table at the mountain hut"}
