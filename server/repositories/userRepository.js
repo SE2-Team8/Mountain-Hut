@@ -92,4 +92,4 @@ async function createHiker(password, fullName, email, phoneNumber, notes=null, e
 // }
 
 
-export { User, getUserById, getUserFromEmail, getUserFromCredentials, createHiker, createWarden, createEmployee, PWD_HASH_LEN, SALT_LEN };
+export { User, getUserById, getUserFromEmail, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
