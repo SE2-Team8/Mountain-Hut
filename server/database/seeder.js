@@ -9,8 +9,8 @@ const users = [
     {
 		password: 'strong_password',
 		role: 'WARDEN',
-		fullName: 'Mario Rossi',
-		email: 'mario.rossi@gmail.com',
+		fullName: 'Marco Verdi',
+		email: 'marco.verdi@gmail.com',
 		phoneNumber: '+39 1234567890',
 		notes: null,
 		emergencyContact: null
@@ -27,8 +27,8 @@ const users = [
 	{
 		password: 'iLoveHuts',
 		role: 'HIKER',
-		fullName: 'Paola Bianchi',
-		email: 'funnyhiker.82@gmail.com',
+		fullName: 'Mario Rossi',
+		email: 'r0ssi.mari0.se2.1998@gmail.com',
 		phoneNumber: '+39 9876543210',
 		notes: 'registered mountain guide',
 		emergencyContact: '+39 8765432109'
