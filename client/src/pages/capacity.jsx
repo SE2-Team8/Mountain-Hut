@@ -47,6 +47,10 @@ function createCapacitySchema(slots) {
       const startTime = new Date(values.startDateTime).getTime();
       const endTime = new Date(values.endDateTime).getTime();
 
+      if (!Number.isNaN(startTime) && startTime < Date.now()) {
+        context.addIssue({ code: "custom", path: ["startDateTime"], message: "The start must be in the future." });
+      }
+
       if (!Number.isNaN(startTime) && !Number.isNaN(endTime) && endTime <= startTime) {
         context.addIssue({ code: "custom", path: ["endDateTime"], message: "End must be after the start." });
       }
