@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/utils/date";
+import { useNavigate } from "react-router";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
@@ -48,6 +49,7 @@ function PageReservations() {
   const [availability, setAvailability] = useState({ rangeKey: null, slots: [], error: false });
   const [loading, setLoading] = useState(true);
   const todayRange = getTodayRange();
+  const navigate = useNavigate();
 
   const formSchema = zod.object({
     from: zod.string().min(1, "Start date and time are required"),
@@ -182,8 +184,10 @@ function PageReservations() {
 
     if (response?.success) {
       toast.success("Reservation confirmed!");
-      setValue("timeSlotId", "");
-      setValue("partySize", 1);
+      //setValue("timeSlotId", "");
+      //setValue("partySize", 1);
+      navigate("/", { viewTransition: true });
+      return;
     }
 
     await fetchAvailability(from, to);
