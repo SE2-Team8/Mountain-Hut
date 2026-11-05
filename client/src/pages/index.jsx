@@ -42,9 +42,7 @@ function PageIndex() {
     return (
         <div className="mx-auto max-w-5xl space-y-12 py-12">
             <section className="space-y-6 text-center">
-                <div className="mx-auto flex size-30 items-center justify-center rounded-full text-primary">
-                    <img src={logoMark} alt="Mountain Hut" className="mx-auto w-auto" />
-                </div>
+                <img src={logoMark} alt="Mountain Hut" className="mx-auto h-30 w-auto" />
                 <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
                     {user ? `Welcome back, ${firstName}` : "Your table at the mountain hut"}
                 </h1>
@@ -60,7 +58,7 @@ function PageIndex() {
                             <Link to="/reservations" viewTransition><CalendarCheck />Book a table</Link>
                         </Button>
                         {!user && (
-                            <Button size="lg" variant="outline" className={heroButton} asChild>
+                            <Button size="lg" variant="secondary" className={heroButton} asChild>
                                 <Link to="/auth/login" viewTransition><LogIn />Login</Link>
                             </Button>
                         )}

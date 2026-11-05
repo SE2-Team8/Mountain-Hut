@@ -115,17 +115,19 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 body {
-  background-color: #f4efe6;
-  background-image: linear-gradient(rgba(244, 239, 230,0.5),rgba(244, 239, 230,0.5)),
-  url(../img/Background.png);
+  --veil: rgba(244, 239, 230, 0.5);
+  background-color: var(--background);
+  background-image: linear-gradient(var(--veil),var(--veil)), url(../img/Background.png);
   background-size: cover;
-  
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   min-height: 100vh
 }
 
+.dark body {
+  --veil: rgba(20, 22, 20, 0.78);
+}
 
 @layer base {
   * {
