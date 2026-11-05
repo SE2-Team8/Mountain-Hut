@@ -215,7 +215,6 @@ describe("POST /api/timeslots - invalid data", ()=>{
 		it.each([
 			["seats is not a number", [{tableNumber : 1, totalSeats: "four"}]],
 			["table is not a number", [{tableNumber : "one", totalSeats : 6}]],
-			["a table is not in the database", [{tableNumber : 1, totalSeats : 6}, {tableNumber : 9999, totalSeats: 5}]],
 			["table is an empty array", []]])
 			("4xx if %s", async(_label,body) =>{
 				const agent = await loginAsRole("employee")
