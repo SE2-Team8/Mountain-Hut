@@ -11,17 +11,21 @@ vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseEr
 vi.mock("../../services/smtpService.js", () => ({
 	sendTemplateEmail: vi.fn(),
 }));
+vi.mock("../../utils/dateTimeFormatter.js", () => ({
+  formatDateTime: vi.fn(),
+}));
 
 import { createReservation, getReservationsByUser } from "../../repositories/reservationRepository.js";
 import { getTimeSlotById } from "../../repositories/timeSlotRepository.js";
 import { responseSuccess, responseError } from "../../utils/response.js";
 import reservationController from "../../controllers/reservationController.js";
+import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import { sendTemplateEmail } from "../../services/smtpService.js";
 
 const NOW = new Date("2027-03-10T10:00:00Z");
 const HOUR = 3600e3;
 const res = {};
-const SESSION_USER = { userId: 7, role: "HIKER" };
+const SESSION_USER = { userId: 7, role: "HIKER", fullName: "Mario Rossi", email: "hiker@example.com" };
 const call = (body, user = SESSION_USER) => reservationController.create({ user, body }, res);
 const slotStartingIn = (ms) => ({ timeSlotId: 1, startDateTime: new Date(NOW.getTime() + ms), endDateTime: new Date(NOW.getTime() + 2 * ms) });
 
@@ -32,6 +36,7 @@ beforeEach(() => {
   getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
   getReservationsByUser.mockResolvedValue([]);
   createReservation.mockResolvedValue(42);
+  formatDateTime.mockReturnValue("formatted-date-string");
 });
 afterEach(() => vi.useRealTimers());
 
@@ -109,6 +114,54 @@ describe("reservationController.create - errors", () => {
     createReservation.mockRejectedValue(new Error("Not enough free seats"));
 
     await expect(call({ timeSlotId: 1, partySize: 50 })).rejects.toThrow("Not enough free seats");
+    expect(responseSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("reservationController.create - email notification", () => {
+  it("sends a confirmation email with the correct template and data upon successful reservation", async () => {
+    
+    getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
+    createReservation.mockResolvedValue(42);  
+    
+    formatDateTime
+      .mockReturnValueOnce("10-03-2027 10:00") // startDateTime
+      .mockReturnValueOnce("10-03-2027 12:00"); // endDateTime
+
+    await call({ timeSlotId: 1, partySize: 4 });
+    
+    expect(sendTemplateEmail).toHaveBeenCalledWith({
+      to: "hiker@example.com",
+      subject: "Reservation Confirmation",
+      templateName: "reservation-confirmation",
+      data: {
+        user: {
+          fullName: "Mario Rossi",
+        },
+        reservation: {
+          reservId: 42,
+          userId: 7,
+          timeSlotId: 1,
+          partySize: 4,
+        },
+        timeSlot: {
+          timeSlotId: 1,
+          startDateTime: "10-03-2027 10:00",
+          endDateTime: "10-03-2027 12:00",
+        },
+      },
+      text: "Your reservation has been confirmed.",
+    });
+    
+    expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+  });
+
+  it("lets SMTP service errors reach the error handler without sending success response", async () => {
+    
+    sendTemplateEmail.mockRejectedValue(new Error("SMTP server down"));
+
+    await expect(call({ timeSlotId: 1, partySize: 4 })).rejects.toThrow("SMTP server down");
+    
     expect(responseSuccess).not.toHaveBeenCalled();
   });
 });
