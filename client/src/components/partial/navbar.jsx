@@ -1,4 +1,5 @@
-import logo from '@/assets/img/LogoName.png';
+import logoOnLight from '@/assets/img/LogoName_removed.png';
+import logoOnDark from '@/assets/img/LogoName_removed_white.png';
 import { Link, useLocation, useNavigate, NavLink } from "react-router";
 import api from '@/api'
 import {
@@ -46,7 +47,8 @@ function Navbar({ className, ...props }) {
             <div className="mx-auto grid h-16 max-w-screen-2xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4">
 
                 <Link to="/" className="flex items-center justify-self-start" viewTransition>
-                    <img src={logo} className="h-15 w-auto" alt="Mountain Hut" />
+                    <img src={logoOnLight} className="h-10 w-auto dark:hidden" alt="Mountain Hut" />
+                    <img src={logoOnDark} className="hidden h-10 w-auto dark:block" alt="Mountain Hut" />
                 </Link>
 
                 <NavigationMenu className="flex-none">
