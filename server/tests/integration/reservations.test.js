@@ -4,9 +4,8 @@ const { sendMail } = vi.hoisted(() => ({ sendMail: vi.fn() }));
 vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail }) } }));
 import app from "../../index.js";
 import db from "../../config/db.js";
-import { createHiker } from "../../repositories/userRepository.js";
 import {
-	initSchema, resetDb, loginAs, loginAsRole, getUserId, getTimeSlotId, getReservations, getAssignments, getFreeSeats,
+	initSchema, resetDb, loginAsRole, getUserId, getTimeSlotId, getReservations, getAssignments, getFreeSeats,
 	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, USERS, SLOTS,
 } from "../helpers/helpers.js";
 
@@ -199,5 +198,43 @@ describe("POST /api/timeslots/reservation - 2 hours rule", () => {
 
 		expect((await book(agent, slot1, 2)).status).toBe(400);
 		await expectNothingBooked();
+	});
+});
+
+describe("POST /api/timeslots/reservation - email notification", () => {
+	it("sends a confirmation email containing the rendered HTML template", async () => {
+		const agent = await loginAsRole("hiker");
+
+		sendMail.mockClear();
+
+		const partySize = 3;
+		const res = await book(agent, slot1, partySize);
+		expect(res.status).toBe(201);
+
+		expect(sendMail).toHaveBeenCalledTimes(1);
+
+		const mailPayload = sendMail.mock.calls[0][0];
+
+		expect(mailPayload).toMatchObject({
+			to: USERS.hiker.email, // "funnyhiker.82@gmail.com"
+			subject: "Reservation Confirmation",
+			text: expect.stringContaining("confirmed"),
+		});
+
+		expect(mailPayload.html).toContain(USERS.hiker.fullName); // "Paola Bianchi"
+		expect(mailPayload.html).toContain(`<strong>Party size:</strong> ${partySize}`);
+		
+		expect(mailPayload.html).toContain(`<strong>Reservation number:</strong> ${res.body.data}`);
+	});
+
+	it("does not send an email if the validation fails", async () => {
+		const agent = await loginAsRole("hiker");
+		sendMail.mockClear();
+
+		// Prenotazione fallita (es. partySize 0)
+		const res = await agent.post("/api/timeslots/reservation").send({ timeSlotId: slot1, partySize: 0 });
+		expect(res.status).toBe(422);
+
+		expect(sendMail).not.toHaveBeenCalled();
 	});
 });
