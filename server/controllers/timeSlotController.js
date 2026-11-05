@@ -23,6 +23,9 @@ const timeSlotController = {
         const from = new Date(startDateTime);
         const to = new Date(endDateTime);
 
+        if (from.getTime() < Date.now())
+            return responseError(res, null, "A time slot cannot start in the past", 400);
+
         if (copyFromTimeSlotId !== undefined) { // if the employee chooses to copy, the source slot must exist
             const source = await getTimeSlotById(copyFromTimeSlotId);
             if (!source)
