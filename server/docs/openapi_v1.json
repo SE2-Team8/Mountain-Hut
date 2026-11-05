@@ -1,0 +1,443 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Mountain Hut APIs v1",
+		"description": "APIs description for the first version of the Mountain Hut webserver",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{ "url": "http://localhost:3001/api", "description": "Development server" }
+	],
+	"tags": [
+		{ "name": "Users" },
+		{ "name": "TimeSlots" },
+		{ "name": "Reservations" }
+	],
+	"paths": {
+		"/users/{id}": {
+			"get": {
+				"tags": ["Users"],
+				"summary": "Get a user by ID",
+				"description": "Requires an authenticated user with role EMPLOYEE or WARDEN.",
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+				],
+				"responses": {
+					"200": {
+						"description": "The requested user",
+						"content": { "application/json": {
+							"schema": { 
+								"allOf": [
+									{ "$ref": "#/components/schemas/Success" },
+									{
+										"type": "object",
+										"properties": {
+											"data": { "$ref": "#/components/schemas/User" }
+										}
+									}
+								]
+							} 
+						} }
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/sessions": {
+			"post": {
+				"tags": ["Users"],
+				"summary": "Log in (create a session)",
+				"description": "Authenticates with email and password using the local strategy. Sets a session cookie on success.",
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+				},
+				"responses": {
+					"200": {
+						"description": "Login successful; session cookie set",
+						"content": { "application/json": { "schema":
+						{ 
+							"allOf": [
+									{ "$ref": "#/components/schemas/Success" },
+									{
+										"type": "object",
+										"properties": {
+											"data": { "$ref": "#/components/schemas/User" }
+										}
+									}
+								]
+						} 
+						} }
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/sessions/current": {
+			"get": {
+				"tags": ["Users"],
+				"summary": "Get the currently logged-in user",
+				"security": [{ "cookieAuth": [] }],
+				"responses": {
+					"200": {
+						"description": "The current session's user",
+						"content": { "application/json": { "schema":
+						{ 
+							"allOf": [
+									{ "$ref": "#/components/schemas/Success" },
+									{
+										"type": "object",
+										"properties": {
+											"data": { "$ref": "#/components/schemas/User" }
+										}
+									}
+								]
+						} 
+						} }
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			},
+			"delete": {
+				"tags": ["Users"],
+				"summary": "Log out (destroy the current session)",
+				"responses": { "200": {
+					"description": "Logout successful",
+					"content": { "application/json": { "schema":
+						{ 
+							"allOf": [
+								{ "$ref": "#/components/schemas/Success" },
+								{
+									"type": "object",
+									"properties": {
+										"data": { "nullable": true, "example": null }
+									}
+								}
+							]
+						} 
+						} }
+					}
+				}
+			}
+		},
+		"/register": {
+			"post": {
+				"tags": ["Users"],
+				"summary": "Register a new user",
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+				},
+				"responses": {
+					"201": {
+						"description": "User created",
+						"content": { "application/json": { "schema":
+						{ 
+							"allOf": [
+								{ "$ref": "#/components/schemas/Success" },
+								{
+									"type": "object",
+									"properties": {
+										"data": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							]
+						} 
+						} }
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"409": { "description": "Email already registered" }
+				}
+			}
+		},
+		"/timeslots": {
+			"get": {
+				"tags": ["TimeSlots"],
+				"summary": "List time slots",
+				"description": "Can specify dates 'from' and 'to' to query only inside a time range",
+				"parameters": [
+					{ "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "Lower bound (ISO 8601)" },
+					{ "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date-time" }, "description": "Upper bound (ISO 8601)" }
+				],
+				"responses": {
+					"200": {
+						"description": "A list of time slots",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "type": "array", "items": { "$ref": "#/components/schemas/TimeSlot" } }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" }
+				}
+			},
+			"post": {
+				"tags": ["TimeSlots"],
+				"summary": "Create a time slot with either the table list or another timeslot id to copy the list from",
+				"description": "Requires role EMPLOYEE or WARDEN. Provide exactly one of `tables` (Option A) or `copyFromTimeSlotId` (Option B).",
+				"security": [{ "cookieAuth": [] }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"oneOf": [
+									{ "$ref": "#/components/schemas/CreateTimeSlotWithTables" },
+									{ "$ref": "#/components/schemas/CreateTimeSlotByCopy" }
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "TCreated time slot id",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "type": "integer", "minimum": 1 }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" }
+				}
+			}
+		},
+		"/timeslots/{start}": {
+			"get": {
+				"tags": ["TimeSlots"],
+				"summary": "Get a time slot by its start datetime",
+				"parameters": [
+					{ "name": "start", "in": "path", "required": true, "schema": { "type": "string", "format": "date-time" }, "description": "The start datetime (ISO 8601)" }
+				],
+				"responses": {
+					"200": {
+						"description": "The matching time slot",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "$ref": "#/components/schemas/TimeSlot" }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/timeslots/reservation": {
+			"post": {
+				"tags": ["Reservations"],
+				"summary": "Create a reservation",
+				"security": [{ "cookieAuth": [] }],
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateReservationRequest" } } }
+				},
+				"responses": {
+					"201": {
+						"description": "Reservation created, returns reservation id",
+						"content": { "application/json": { 
+							"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "type": "integer", "minimum": 1 }
+											}
+										}
+									]
+								}
+						} }
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"User": {
+				"type": "object",
+				"required": ["userId", "role", "email", "fullName", "phoneNumber"],
+				"properties": {
+					"userId": { "type": "integer" },
+					"role": { "type": "string", "enum": ["HIKER", "EMPLOYEE", "WARDEN"] },
+					"email": { "type": "string", "format": "email" },
+					"fullName": { "type": "string" },
+					"phoneNumber": { "type": "string" },
+					"notes": { "type": "string" },
+					"emergencyContact": { "type": "string" }
+				}
+			},
+			"LoginRequest": {
+				"type": "object",
+				"required": ["email", "password"],
+				"properties": {
+					"email": { "type": "string", "format": "email" },
+					"password": { "type": "string" }
+				}
+			},
+			"RegisterRequest": {
+				"type": "object",
+				"required": ["email", "password", "fullName", "phone"],
+				"properties": {
+					"email": { "type": "string", "format": "email" },
+					"password": { "type": "string" },
+					"fullName": { "type": "string" },
+					"phone": { "type": "string" }
+				}
+			},
+			"Table": {
+				"type": "object",
+				"required": ["tableNumber", "totalSeats"],
+				"properties": {
+					"tableNumber": { "type": "integer", "minimum": 1 },
+					"totalSeats": { "type": "integer", "minimum": 1 }
+				}
+			},
+			"TimeSlot": {
+				"type": "object",
+				"required": ["timeSlotId", "startDateTime", "endDateTime", "freeSeats"],
+				"properties": {
+					"timeSlotId": { "type": "integer", "minimum": 1  },
+					"startDateTime": { "type": "string", "format": "date-time" },
+					"endDateTime": { "type": "string", "format": "date-time" },
+					"freeSeats": { "type": "integer", "minimum": 0 }
+				}
+			},
+			"CreateTimeSlotWithTables": {
+				"type": "object",
+				"required": ["startDateTime", "endDateTime", "tables"],
+				"properties": {
+					"startDateTime": { "type": "string", "format": "date-time" },
+					"endDateTime": { "type": "string", "format": "date-time", "description": "Must be after startDateTime" },
+					"tables": { "type": "array", "minItems": 1, "items": { "$ref": "#/components/schemas/Table" } }
+				}
+			},
+			"CreateTimeSlotByCopy": {
+				"type": "object",
+				"required": ["startDateTime", "endDateTime", "copyFromTimeSlotId"],
+				"properties": {
+					"startDateTime": { "type": "string", "format": "date-time" },
+					"endDateTime": { "type": "string", "format": "date-time", "description": "Must be after startDateTime" },
+					"copyFromTimeSlotId": { "type": "integer", "minimum": 1 }
+				}
+			},
+			"CreateReservationRequest": {
+				"type": "object",
+				"required": ["timeSlotId", "partySize"],
+				"properties": {
+					"timeSlotId": { "type": "integer", "minimum": 1 },
+					"partySize": { "type": "integer", "minimum": 1 }
+				}
+			},
+			"Reservation": {
+				"type": "object",
+				"required": ["reservId", "timeSlotId", "userId", "partySize"],
+				"properties": {
+					"reservId": { "type": "integer", "minimum": 1 },
+					"timeSlotId": { "type": "integer" },
+					"userId": { "type": "integer", "minimum": 1 },
+					"partySize": { "type": "integer" }
+				}
+			},
+			"Error": {
+				"type": "object",
+				"required": ["success", "data", "message"],
+				"properties": {
+					"success": { "type": "boolean", "enum": [false]},
+					"data": { "nullable": true },
+					"message": { "type": "string" }
+				}
+			},
+			"Success": {
+				"type": "object",
+				"required": ["success", "data", "message"],
+				"properties": {
+					"success": { "type": "boolean", "enum": [true] },
+					"data": { "nullable": true },
+					"message": { "type": "string" }
+				}
+			}
+		},
+		"responses": {
+			"BadRequest": {
+				"description": "Validation error",
+				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+			},
+			"Unauthorized": {
+				"description": "Not authenticated",
+				"content": { "application/json": {
+					"schema": {
+					"allOf": [
+						{ "$ref": "#/components/schemas/Error" },
+						{
+							"type": "object",
+							"properties": {
+								"message": { "enum": ["Not Authenticated!"] }
+							}
+						}
+						]
+					}
+				}
+			}
+			},
+			"Forbidden": {
+				"description": "Not authorized (missing required role)",
+				"content": { "application/json": {
+					"schema": {
+					"allOf": [
+						{ "$ref": "#/components/schemas/Error" },
+						{
+							"type": "object",
+							"properties": {
+								"message": { "enum": ["Forbidden"] }
+							}
+						}
+						]
+					}
+				}
+			}
+			},
+			"NotFound": {
+				"description": "Not found",
+				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+			}
+		}
+	}
+}

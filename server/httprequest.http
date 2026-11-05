@@ -1,0 +1,35 @@
+POST http://localhost:3001/api/sessions
+content-type: application/json
+
+{
+    "username": "mario.rossi@gmail.com",
+    "password": "strong_password"
+}
+###
+GET http://localhost:3001/api/sessions/current
+
+###
+POST http://localhost:3001/api/sessions
+content-type: application/json
+
+{
+    "username": "mario.rossi@gmail.com",
+    "password": "strong_password_wrong"
+}
+
+###
+POST http://localhost:3001/api/register
+content-Type: application/json
+
+{
+    "email" : "emaggil@email.it",
+    "password" : "password",
+    "fullName" : "emailemail",
+    "phone" : "+39 3234567",
+    "notes" : "some notes",
+    "emergencyContact" : "+39 3456789"
+}
+###
+DELETE  http://localhost:3001/api/sessions/current
+
+
