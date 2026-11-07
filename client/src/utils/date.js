@@ -13,4 +13,12 @@ const formatDateTime = (isoString) => {
   });
 };
 
-export { timestampFormat, formatDateTime }
+
+const dateAndTimeStringsToDate = (dateString, timeString) => {
+	const [year, month, day] = dateString.split('-').map(Number);
+	const [hours, minutes] = timeString.split(':').map(Number);
+	const minutesFromDayStart = hours * 60 + minutes;
+	return new Date(Date.UTC(year, month - 1, day, hours, minutes));
+}
+
+export { timestampFormat, formatDateTime, dateAndTimeStringsToDate }

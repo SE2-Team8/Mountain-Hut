@@ -11,18 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import useUserStore from "@/store/user";
-import { formatDateTime } from "@/utils/date";
+import { dateAndTimeStringsToDate, formatDateTime } from "@/utils/date";
 
 const STAFF_ROLES = new Set(["EMPLOYEE", "WARDEN"]);
 
 function createCapacitySchema(slots) {
   const baseShape = {
-    startDateTime: zod.string()
-      .min(1, "Choose a start date and time.")
-      .refine((val) => !Number.isNaN(new Date(val).getTime()), "Choose a valid start date and time."),
-    endDateTime: zod.string()
-      .min(1, "Choose an end date and time.")
-      .refine((val) => !Number.isNaN(new Date(val).getTime()), "Choose a valid end date and time."),
+	date: zod.iso.date("Choose a valid date."),
+	startTime: zod.iso.time("Choose a valid start time."),
+    endTime: zod.iso.time("Choose a valid end time."),
   };
 
   const manualSchema = zod.object({
@@ -44,20 +41,30 @@ function createCapacitySchema(slots) {
 
   return zod.discriminatedUnion("mode", [manualSchema, copySchema])
     .superRefine((values, context) => {
-      const startTime = new Date(values.startDateTime).getTime();
-      const endTime = new Date(values.endDateTime).getTime();
+	  const startTime = dateAndTimeStringsToDate(values.date, values.startTime).getTime();
+      const endTime = dateAndTimeStringsToDate(values.date, values.endTime).getTime()
 
       if (!Number.isNaN(startTime) && startTime < Date.now()) {
-        context.addIssue({ code: "custom", path: ["startDateTime"], message: "The start must be in the future." });
+        context.addIssue({ code: "custom", path: ["startTime"], message: "The start must be in the future." });
       }
 
       if (!Number.isNaN(startTime) && !Number.isNaN(endTime) && endTime <= startTime) {
-        context.addIssue({ code: "custom", path: ["endDateTime"], message: "End must be after the start." });
+        context.addIssue({ code: "custom", path: ["endTime"], message: "End must be after the start." });
       }
 
-      if (!Number.isNaN(startTime) && slots.some((slot) => new Date(slot.startDateTime).getTime() === startTime)) {
-        context.addIssue({ code: "custom", path: ["startDateTime"], message: "A slot already starts at this time." });
+      if (!Number.isNaN(startTime) && slots.some(
+		// a slot A overlaps the new slot B if neither (A ends after B starts) and (A starts before B ends) is true
+		(slot) => !(
+			new Date(slot.startDateTime).getTime() >= endTime ||
+			(new Date(slot.endDateTime).getTime() <= startTime))
+		)) {
+        context.addIssue({ code: "custom", path: ["startTime"], message: "An existing slot overlaps the selected time-range." });
+        context.addIssue({ code: "custom", path: ["endTime"], message: "An existing slot overlaps the selected time-range." });
       }
+
+	//   if (!Number.isNaN(startTime) && slots.some((slot) => new Date(slot.startDateTime).getTime() === startTime)) {
+    //     context.addIssue({ code: "custom", path: ["startTime"], message: "A slot already starts at this time." });
+    //   }
 
       if (values.mode === "manual") {
         const usedTableNumbers = new Set();
@@ -120,8 +127,9 @@ function PageCapacity() {
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
-      startDateTime: "",
-      endDateTime: "",
+      date: "",
+      startTime: "",
+      endTime: "",
       mode: "manual",
       copyFromTimeSlotId: "",
       tables: [{ tableNumber: "1", totalSeats: "" }],
@@ -140,8 +148,8 @@ function PageCapacity() {
 
   async function handleCreateSlot(values) {
     const response = await api.timeslots.create({
-      startDateTime: new Date(values.startDateTime).toISOString(),
-      endDateTime: new Date(values.endDateTime).toISOString(),
+      startDateTime: dateAndTimeStringsToDate(values.date, values.startTime).toISOString(),
+      endDateTime: dateAndTimeStringsToDate(values.date, values.endTime).toISOString(),
       ...(values.mode === "copy"
         ? { copyFromTimeSlotId: Number(values.copyFromTimeSlotId) }
         : { tables: values.tables }),
@@ -173,31 +181,43 @@ function PageCapacity() {
           <form onSubmit={handleSubmit(handleCreateSlot)}>
             <fieldset disabled={formState.isSubmitting} className="contents">
               <FieldGroup>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Controller
-                    name="startDateTime"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="capacity-start">From</FieldLabel>
-                        <Input {...field} id="capacity-start" type="datetime-local" step="60"
-                          aria-invalid={fieldState.invalid} />
-                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                      </Field>
-                    )}
-                  />
-                  <Controller
-                    name="endDateTime"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="capacity-end">To</FieldLabel>
-                        <Input {...field} id="capacity-end" type="datetime-local" step="60"
-                          aria-invalid={fieldState.invalid} />
-                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                      </Field>
-                    )}
-                  />
+				<Controller
+					name="date"
+					control={control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+						<FieldLabel htmlFor="capacity-date">Date</FieldLabel>
+						<Input {...field} id="capacity-date" type="date"
+							aria-invalid={fieldState.invalid} />
+						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
+				/>
+				<div className="grid gap-4 sm:grid-cols-2">
+					<Controller
+					name="startTime"
+					control={control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+						<FieldLabel htmlFor="capacity-start-time">From</FieldLabel>
+						<Input {...field} id="capacity-start-time" type="time" step="60"
+							aria-invalid={fieldState.invalid} />
+						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
+					/>
+					<Controller
+					name="endTime"
+					control={control}
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+						<FieldLabel htmlFor="capacity-end-time">To</FieldLabel>
+						<Input {...field} id="capacity-end-time" type="time" step="60"
+							aria-invalid={fieldState.invalid} />
+						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+						</Field>
+					)}
+					/>
                 </div>
 
                 <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
