@@ -36,6 +36,19 @@ const timeSlotController = {
         if (existing)   // no other slot can start at same time
             return responseError(res, null, `A time slot starting at that time already exists`, 409)
 
+        const startTime = from.getTime();
+        const endTime = to.getTime();
+        const slots = await getAllTimeSlots();
+        if (slots && slots.length > 0){
+            let slotOverlap = null;
+            for (let s of slots){
+                if (s.endDateTime.getTime() > startTime && s.startDateTime.getTime() < endTime) {
+                    slotOverlap = s.timeSlotId;
+                };
+            }
+            if (slotOverlap !== null) return responseError(res, null, `There is an overlap with time slot ${slotOverlap}`, 409);
+        }
+
         try {
             const timeSlotId = await createTimeSlot(from, to, tables ?? null, copyFromTimeSlotId ?? null);
             return responseSuccess(res, { timeSlotId }, "Time slot created", 201);

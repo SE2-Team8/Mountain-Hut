@@ -14,7 +14,7 @@ vi.mock("../../repositories/timeSlotRepository.js", () => ({
 }));
 vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseError: vi.fn() }));
 
-import { createTimeSlot, getTimeSlotById, getTimeSlotByStart, TimeSlot } from "../../repositories/timeSlotRepository.js";
+import { createTimeSlot, getTimeSlotById, getAllTimeSlots, getTimeSlotByStart, TimeSlot } from "../../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../../utils/response.js";
 import timeSlotController from "../../controllers/timeSlotController.js";
 
@@ -90,4 +90,52 @@ describe("timeSlotController.create", () => {
 	expect(responseSuccess.mock.calls[0][3]).toBe(201);
   });
 
+});
+
+describe("timeSlotController.create - overlap logic", () => {
+  const body = {
+    startDateTime: "2027-03-10T10:00:00Z",
+    endDateTime: "2027-03-10T12:00:00Z",
+    tables: [{ tableNumber: 1, totalSeats: 4 }]
+  };
+
+  beforeEach(() => {
+    getTimeSlotByStart.mockResolvedValue(null);
+    getTimeSlotById.mockResolvedValue(null);
+  });
+
+  it.each([
+    ["starts before, ends inside (partial left)", "2027-03-10T09:00:00Z", "2027-03-10T11:00:00Z"],
+    ["starts inside, ends after (partial right)", "2027-03-10T11:00:00Z", "2027-03-10T13:00:00Z"],
+    ["is completely inside (enclosed)", "2027-03-10T10:30:00Z", "2027-03-10T11:30:00Z"],
+    ["completely encloses the new slot (enclosing)", "2027-03-10T09:00:00Z", "2027-03-10T13:00:00Z"],
+  ])("answers 409 when there is an overlap: %s", async (description, existingStart, existingEnd) => {
+    
+    getAllTimeSlots.mockResolvedValue([
+      new TimeSlot(99, new Date(existingStart), new Date(existingEnd), 10)
+    ]);
+
+    await timeSlotController.create({ body }, {});
+
+    expect(responseError).toHaveBeenCalled();
+    expect(responseError.mock.calls[0][3]).toBe(409);
+    expect(responseError.mock.calls[0][2]).toMatch(/overlap/);
+    expect(createTimeSlot).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["ends exactly when new starts", "2027-03-10T08:00:00Z", "2027-03-10T10:00:00Z"],
+    ["starts exactly when new ends", "2027-03-10T12:00:00Z", "2027-03-10T14:00:00Z"],
+  ])("creates the slot when adjacent but not overlapping: %s", async (description, existingStart, existingEnd) => {
+    
+    getAllTimeSlots.mockResolvedValue([
+      new TimeSlot(99, new Date(existingStart), new Date(existingEnd), 10)
+    ]);
+
+    await timeSlotController.create({ body }, {});
+
+    // Nessun overlap: deve permettere la creazione!
+    expect(createTimeSlot).toHaveBeenCalled();
+    expect(responseSuccess.mock.calls[0][3]).toBe(201);
+  });
 });

@@ -266,6 +266,28 @@ describe("POST /api/timeslots - invalid data", ()=>{
 
 })
 
+describe("POST /api/timeslots - overlaps", () => {
+	it.each([
+		["starts before, ends inside (partial left)", UTCToISOString(2027, 2, 10, 11, 30), UTCToISOString(2027, 2, 10, 13, 30)],
+		["starts inside, ends after (partial right)", UTCToISOString(2027, 2, 10, 13, 30), UTCToISOString(2027, 2, 10, 15, 30)],
+		["completely inside (enclosed)", UTCToISOString(2027, 2, 10, 13, 0), UTCToISOString(2027, 2, 10, 14, 0)],
+		["completely encloses the new slot (enclosing)", UTCToISOString(2027, 2, 10, 11, 30), UTCToISOString(2027, 2, 10, 15, 30)]
+	])("409 if %s", async (_label, startDateTime, endDateTime) => {
+		const agent = await loginAsRole("employee");
+		const res = await agent.post('/api/timeslots').send({
+			startDateTime,
+			endDateTime,
+			copyFromTimeSlotId: 1
+		});
+		
+		expect(res.status).toBe(409);
+		expectEnvelope(res, false);
+		expect(res.body.message).toMatch(/overlap/i);
+		
+		await noTimeSlotAdded();
+	});
+});
+
 describe("POST /api/timeslots - happy paths", ()=>{
 	it("happy path for option A", async ()=>{
 		const agent = await loginAsRole("employee")
