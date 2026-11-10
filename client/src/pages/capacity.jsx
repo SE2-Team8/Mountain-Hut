@@ -15,10 +15,33 @@ import { dateAndTimeStringsToDate, formatDateTime } from "@/utils/date";
 
 const STAFF_ROLES = new Set(["EMPLOYEE", "WARDEN"]);
 
+function hasTimeSlotOverlap(values, slots) {
+  const { date, startTime, endTime } = values;
+
+  if (!date || !startTime || !endTime) return false;
+
+  const start = dateAndTimeStringsToDate(date, startTime).getTime();
+  const end = dateAndTimeStringsToDate(date, endTime).getTime();
+
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    end <= start
+  ) {
+    return false;
+  }
+
+  return slots.some(
+    (slot) =>
+      new Date(slot.startDateTime).getTime() < end &&
+      new Date(slot.endDateTime).getTime() > start
+  );
+}
+
 function createCapacitySchema(slots) {
   const baseShape = {
-	date: zod.iso.date("Choose a valid date."),
-	startTime: zod.iso.time("Choose a valid start time."),
+    date: zod.iso.date("Choose a valid date."),
+    startTime: zod.iso.time("Choose a valid start time."),
     endTime: zod.iso.time("Choose a valid end time."),
   };
 
@@ -41,7 +64,7 @@ function createCapacitySchema(slots) {
 
   return zod.discriminatedUnion("mode", [manualSchema, copySchema])
     .superRefine((values, context) => {
-	  const startTime = dateAndTimeStringsToDate(values.date, values.startTime).getTime();
+      const startTime = dateAndTimeStringsToDate(values.date, values.startTime).getTime();
       const endTime = dateAndTimeStringsToDate(values.date, values.endTime).getTime()
 
       if (!Number.isNaN(startTime) && startTime < Date.now()) {
@@ -52,19 +75,11 @@ function createCapacitySchema(slots) {
         context.addIssue({ code: "custom", path: ["endTime"], message: "End must be after the start." });
       }
 
-      if (!Number.isNaN(startTime) && slots.some(
-		// a slot A overlaps the new slot B if neither (A ends after B starts) and (A starts before B ends) is true
-		(slot) => !(
-			new Date(slot.startDateTime).getTime() >= endTime ||
-			(new Date(slot.endDateTime).getTime() <= startTime))
-		)) {
-        context.addIssue({ code: "custom", path: ["startTime"], message: "An existing slot overlaps the selected time-range." });
-        context.addIssue({ code: "custom", path: ["endTime"], message: "An existing slot overlaps the selected time-range." });
-      }
 
-	//   if (!Number.isNaN(startTime) && slots.some((slot) => new Date(slot.startDateTime).getTime() === startTime)) {
-    //     context.addIssue({ code: "custom", path: ["startTime"], message: "A slot already starts at this time." });
-    //   }
+
+      //   if (!Number.isNaN(startTime) && slots.some((slot) => new Date(slot.startDateTime).getTime() === startTime)) {
+      //     context.addIssue({ code: "custom", path: ["startTime"], message: "A slot already starts at this time." });
+      //   }
 
       if (values.mode === "manual") {
         const usedTableNumbers = new Set();
@@ -140,13 +155,23 @@ function PageCapacity() {
   const mode = useWatch({ control, name: "mode" }) ?? "manual";
   const tablesValue = useWatch({ control, name: "tables" }) ?? [];
   const { fields, append, remove } = useFieldArray({ control, name: "tables" });
-
   const tableCapacity = tablesValue.reduce((sum, table) => sum + (Number(table.totalSeats) || 0), 0);
+
+  const date = useWatch({ control, name: "date" });
+  const startTime = useWatch({ control, name: "startTime" });
+  const endTime = useWatch({ control, name: "endTime" });
+
+  const hasOverlap = hasTimeSlotOverlap(
+    { date, startTime, endTime },
+    slots
+  );
 
   if (!user) return <Navigate to="/auth/login" replace />;
   if (!STAFF_ROLES.has(user.role)) return <Navigate to="/" replace />;
 
   async function handleCreateSlot(values) {
+    if (hasTimeSlotOverlap(values, slots)) return;
+
     const response = await api.timeslots.create({
       startDateTime: dateAndTimeStringsToDate(values.date, values.startTime).toISOString(),
       endDateTime: dateAndTimeStringsToDate(values.date, values.endTime).toISOString(),
@@ -160,8 +185,9 @@ function PageCapacity() {
 
       reset({
         ...form.getValues(),
-        startDateTime: "",
-        endDateTime: "",
+        date: "",
+        startTime: "",
+        endTime: "",
       });
 
       await loadSlots();
@@ -181,44 +207,51 @@ function PageCapacity() {
           <form onSubmit={handleSubmit(handleCreateSlot)}>
             <fieldset disabled={formState.isSubmitting} className="contents">
               <FieldGroup>
-				<Controller
-					name="date"
-					control={control}
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
-						<FieldLabel htmlFor="capacity-date">Date</FieldLabel>
-						<Input {...field} id="capacity-date" type="date"
-							aria-invalid={fieldState.invalid} />
-						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-						</Field>
-					)}
-				/>
-				<div className="grid gap-4 sm:grid-cols-2">
-					<Controller
-					name="startTime"
-					control={control}
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
-						<FieldLabel htmlFor="capacity-start-time">From</FieldLabel>
-						<Input {...field} id="capacity-start-time" type="time" step="60"
-							aria-invalid={fieldState.invalid} />
-						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-						</Field>
-					)}
-					/>
-					<Controller
-					name="endTime"
-					control={control}
-					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
-						<FieldLabel htmlFor="capacity-end-time">To</FieldLabel>
-						<Input {...field} id="capacity-end-time" type="time" step="60"
-							aria-invalid={fieldState.invalid} />
-						{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-						</Field>
-					)}
-					/>
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="capacity-date">Date</FieldLabel>
+                      <Input {...field} id="capacity-date" type="date"
+                        aria-invalid={fieldState.invalid} />
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </Field>
+                  )}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Controller
+                    name="startTime"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="capacity-start-time">From</FieldLabel>
+                        <Input {...field} id="capacity-start-time" type="time" step="60"
+                          aria-invalid={fieldState.invalid} />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name="endTime"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="capacity-end-time">To</FieldLabel>
+                        <Input {...field} id="capacity-end-time" type="time" step="60"
+                          aria-invalid={fieldState.invalid} />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
                 </div>
+                {hasOverlap && (
+                  <div className="text-center">
+                    <FieldError>
+                      An existing slot overlaps the selected time range.
+                    </FieldError>
+                  </div>
+                )}
 
                 <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
                   <div>
@@ -280,9 +313,10 @@ function PageCapacity() {
                         <FieldError>{formState.errors.tables.message || formState.errors.tables.root.message}</FieldError>
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <Button type="button" variant="outline" onClick={() => append({ 
+                        <Button type="button" variant="outline" onClick={() => append({
                           tableNumber: String(Math.max(0, ...tablesValue.map((t) => Number(t.tableNumber) || 0)) + 1),
-                          totalSeats: "" })}>
+                          totalSeats: ""
+                        })}>
                           <Plus />Add table
                         </Button>
                         <p className="text-sm text-muted-foreground">
