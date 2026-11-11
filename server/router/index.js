@@ -76,6 +76,14 @@ router.post('/timeslots',
     ]),
     wrapController(timeSlotController.create));
 
+// endpoint to get a timeslot given date, startTime and partySize
+router.get('/timeslots/availability',
+    validator([
+        query('start').isISO8601().withMessage('Start parameter must be a valid date'),
+        query('partySize').isInt({ min: 1 }).withMessage('Party Size must be an integer greater than 0').toInt(),
+    ]),
+    wrapController(timeSlotController.getByStartAndPartySize)
+)
 // endpoint to get a time slot givent its start
 router.get('/timeslots/:start',
     validator([
@@ -83,14 +91,6 @@ router.get('/timeslots/:start',
     ]),
     wrapController(timeSlotController.getByStart));
 
-// endpoint to get a timeslot given date, startTime and partySize
-router.get('/timeslots/:start/:partySize',
-    validator([
-        param('start').isISO8601().withMessage('Start parameter must be a valid date'),
-        param('partySize').isInt({ min: 1 }).withMessage('Party Size must be an integer greater than 0').toInt(),
-    ]),
-    wrapController(timeSlotController.getByStartAndPartySize)
-)
 // endpoint to create a reservation
 router.post('/timeslots/reservation', isAuthenticated,
     checkBodyLength(2),
