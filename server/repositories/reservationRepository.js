@@ -41,88 +41,96 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 	));
 }
 
+// given a timeSlot id and a party size, this function selects the tables that are assigned to the party with the following rules:
+// - if there is not enough room for all the people, return an empty array
+// - if there is enough space, the selection will try to assign the party to the least amount of tables and return the corresponding selection array
+// the return value is an array where each element is an object { tableId, seatsToTake }
+// the function may throws some error if the db interaction fails or the selection fails to allocate
+// all the people when enough seats are available (should not happen) 
+async function getAvailableTables(timeSlotId, partySize) {
+	// select all tables that have some free seats, SORTED by increasing number of free seats 
+	// (having tables sorted is needed for the table selection algorithm below)
+	let freeTables = await queryAll(
+		`SELECT tableNumber, tableId, totalSeats, freeSeats
+		FROM tables
+		WHERE timeSlotId = ? AND freeSeats > 0
+		ORDER BY freeSeats ASC;`, [timeSlotId]
+	);
+
+	// check that there is enough space
+	const totalFreeSeats = freeTables.reduce((sum, row) => sum + row.freeSeats, 0);
+		
+	// if not, return an empty array
+	if (totalFreeSeats < partySize)
+		return [];
+
+	let selectedTables = []; // array of objects where tableId and seats to take are saved
+	let peopleLeft = partySize; // people left to assign
+	let lastTableIndex = freeTables.length - 1; // used to keep track of tables already considered
+
+	let max_tries = 10000; // guard to avoid infinite loops
+	while (peopleLeft > 0 && max_tries-- > 0 && lastTableIndex >= 0) {
+		// console.log("party members left: ", peoplesLeft);
+		let selectedTable = null;
+		let seatsToTake = 0;
+
+		// select tables: try to find the smallest table that contains all the peoples left
+		for (let i = 0; i <= lastTableIndex; i++) {
+			const table = freeTables[i];
+			if (table.freeSeats >= peopleLeft) {
+				selectedTable = table;
+				seatsToTake = peopleLeft;
+				break;
+			}
+		}
+
+		// no table can contain all people left -> get the table with the highest number of free seats 
+		// and occupy all the available seats, then continue
+		if (selectedTable == null) {
+			selectedTable = freeTables[lastTableIndex];
+			seatsToTake = Math.min(peopleLeft, selectedTable.freeSeats);
+			lastTableIndex -= 1; // when selecting a table it is not selectable anymore
+		}
+
+		// add the selected table to the list
+		selectedTables.push({tableId: selectedTable.tableId, seatsToTake: seatsToTake });
+
+		// update the number of people left to allocate
+		peopleLeft -= seatsToTake;
+	}
+
+	// if max tries were exceeded or the people could not be fully assigned for some reason, throw an error
+	if (max_tries <= 0 || peopleLeft > 0)
+		throw new Error("Could not select tables for reservation!");
+
+	// return the selected tables list
+	return selectedTables;
+}
+
 // creates a reservation and returns the created reservation id.
 // the only enforced business rules inside this method are the party size < available seats
 // (other rules such as reservation time or author of the reservation must be checked somewhere else)
 async function createReservation(userId, timeSlotId, partySize) {
 	return await withTransaction(async () => {
-		// select all tables that have some free seats, sorted by increasing number of free seats
-		let freeTables = await queryAll(
-			`SELECT tableNumber, tableId, totalSeats, freeSeats
-			FROM tables
-			WHERE timeSlotId = ? AND freeSeats > 0
-			ORDER BY freeSeats ASC;`, [timeSlotId]
-		);
+		// get the available tables for the given slot and party size
+		const reservTables = await getAvailableTables(timeSlotId, partySize);
 
-		// check that there is enough space
-		const totalFreeSeats = freeTables.reduce((sum, row) => sum + row.freeSeats, 0);
-		
-		// debug
-		// console.log("Total number of free seats: ", totalFreeSeats, ". Available tables:\n", freeTables);
-		
-		if (totalFreeSeats < partySize)
+		if (reservTables.length == 0)
 			throw new Error("Not enough free seats to make a reservation");
-
-		// array of objects where tableId and seats to take are saved
-		let reservTables = [];
-		let peoplesLeft = partySize;
-		let lastTableIndex = freeTables.length - 1;
-		let max_tries = 10000;
-		while (peoplesLeft > 0 && max_tries-- > 0) {
-			if (lastTableIndex < 0)
-				throw new Error("Could not select tables for reservation!");
-
-			// console.log("party members left: ", peoplesLeft);
-
-			// select tables: try to find the smallest table that contains all the peoples left
-			let singleTable = null;
-			for (let i = 0; i <= lastTableIndex; i++) {
-				const table = freeTables[i];
-				if (table.freeSeats >= peoplesLeft) {
-					singleTable = table;
-					break;
-				}
-			}
-
-			// such table exists -> select it and that's it
-			let selectedTableId = 0;
-			let seatsToTake = 0;
-			if (singleTable != null) {
-				selectedTableId = singleTable.tableId;
-				seatsToTake = peoplesLeft;
-			}
-			// no such table exists -> get the table with the highest number of free seats 
-			// and occupy all the available seats, then continue
-			else {
-				const table = freeTables[lastTableIndex];
-				seatsToTake = Math.min(peoplesLeft, table.freeSeats);
-				selectedTableId = table.tableId;
-				lastTableIndex -= 1; // when selecting a table it is not selectable anymore
-			}
-
-			// update the number of people left to allocate
-			peoplesLeft -= seatsToTake;
-			// add the selected table to a list (to make assignments later)
-			reservTables.push({id: selectedTableId, seatsToTake: seatsToTake });
-		}
-
-		if (max_tries <= 0)
-			throw new Error("Could not select tables for reservation!");
 
 		// console.log(reservTables);
 
 		// occupy selected seats
-		// create table assignments
-		for (const { id, seatsToTake } of reservTables) {
+		for (const { tableId, seatsToTake } of reservTables) {
 			await queryRun(
 				`UPDATE tables
 				SET freeSeats = freeSeats - ?
 				WHERE tableId = ?;`, 
-				[seatsToTake, id]
+				[seatsToTake, tableId]
 			);
 		};
 
-		// create reservation
+		// create actual reservation
 		const queryRes = await queryRun(
 			`INSERT INTO reservations
 			(userId, timeSlotId, partySize) VALUES (?, ?, ?)`, 
@@ -131,11 +139,11 @@ async function createReservation(userId, timeSlotId, partySize) {
 		const reservId = queryRes.lastID;
 		
 		// create table assignments
-		for (const { id, seatsToTake } of reservTables) {
+		for (const { tableId, seatsToTake } of reservTables) {
 			await queryRun(
 				`INSERT INTO tableAssignments
 				(tableId, reservId, occupiedSeats) VALUES (?, ?, ?)`, 
-				[id, reservId, seatsToTake]
+				[tableId, reservId, seatsToTake]
 			);
 		};
 
@@ -147,4 +155,4 @@ async function createReservation(userId, timeSlotId, partySize) {
 
 // TODO (later): deleteReservation, updateReservation
 
-export { Reservation, getReservationById, getReservationsByUser, createReservation };
+export { Reservation, getReservationById, getReservationsByUser, createReservation, getAvailableTables };
