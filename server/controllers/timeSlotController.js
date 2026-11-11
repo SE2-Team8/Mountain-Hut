@@ -1,5 +1,6 @@
-import { getTimeSlotByStart, getAllTimeSlots, getTimeSlotById, createTimeSlot } from "../repositories/timeSlotRepository.js";
+import { getTimeSlotByStart, checkSlotAvailabilty, getAllTimeSlots, getTimeSlotById, createTimeSlot } from "../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../utils/response.js";
+i
 
 const timeSlotController = {
     getAll: async (req, res) => {
@@ -16,6 +17,16 @@ const timeSlotController = {
         if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
 
         return responseSuccess(res, slot, "Time slot retrieved");
+    },
+
+    getByStartAndPartySize: async (req, res) => {
+        const start = req.params.start instanceof Date ? req.params.start : new Date(req.params.start);
+        const slot = await getTimeSlotByStart(start);
+        if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
+        else{
+            const configuration = await checkSlotAvailabilty(slot.timeSlotId, req.params.partySize);
+            return responseSuccess(res, configuration, "Configuration Retrivied")
+        }
     },
 
     create: async (req, res) => {
