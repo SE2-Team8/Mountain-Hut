@@ -1,5 +1,6 @@
 import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
 import { dateToStringISO, stringISOToDate } from "../utils/dateTimeFormatter.js";
+import { getAvailableTables } from "./reservationRepository.js";
 
 function TimeSlot(timeSlotId, startDateTime, endDateTime, freeSeats) {
 	this.timeSlotId = timeSlotId
@@ -73,6 +74,28 @@ async function getAllTimeSlots(from = null, to = null) {
 	return slots;
 }
 
+// checks if a party of a given size could be seated in the timeslot, without creating anything.
+// returns null if the time slot does not exist, otherwise
+// { available, freeSeats, tables: [{ tableNumber, seatsToTake }] } 
+// tables sorted by table number, and empty when the party cannot be seated
+async function checkSlotAvailability(timeSlotId, partySize) {
+	const slot = await getTimeSlotById(timeSlotId);
+	if (!slot) return null;
+
+	const selected = await getAvailableTables(timeSlotId, partySize);
+	if (selected.length === 0)
+		return { available: false, freeSeats: 0, tables: [] }
+
+	return {
+		available: true,
+		freeSeats: slot.freeSeats,
+		tables: selected.map((t) => ({
+			tableNumber: t.tableNumber,
+			seatsToTake: t.seatsToTake, 
+		})).sort((a, b) => a.tableNumber - b.tableNumber)
+	}
+}
+
 // this function create a new time slot, with the set of tables
 // for the set of table we have two options:
 // 1. we give in input a list of tables like [{ tableNumber: 1, totalSeats: 10 }, { tableNumber: 2, totalSeats: 5 }]
@@ -121,4 +144,4 @@ async function createTimeSlot(from, to, tableList = null, timeSlotIdCopy = null)
 
 // TODO (later): deleteTimeSlot, updateTimeSlot
 
-export { TimeSlot, getTimeSlotById, getTimeSlotByStart, getAllTimeSlots, createTimeSlot };
+export { TimeSlot, getTimeSlotById, getTimeSlotByStart, getAllTimeSlots, checkSlotAvailability, createTimeSlot };

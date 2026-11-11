@@ -44,7 +44,7 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 // given a timeSlot id and a party size, this function selects the tables that are assigned to the party with the following rules:
 // - if there is not enough room for all the people, return an empty array
 // - if there is enough space, the selection will try to assign the party to the least amount of tables and return the corresponding selection array
-// the return value is an array where each element is an object { tableId, seatsToTake }
+// the return value is an array where each element is an object { tableId, tableNumber, seatsToTake }
 // the function may throws some error if the db interaction fails or the selection fails to allocate
 // all the people when enough seats are available (should not happen) 
 async function getAvailableTables(timeSlotId, partySize) {
@@ -93,7 +93,7 @@ async function getAvailableTables(timeSlotId, partySize) {
 		}
 
 		// add the selected table to the list
-		selectedTables.push({tableId: selectedTable.tableId, seatsToTake: seatsToTake });
+		selectedTables.push({tableId: selectedTable.tableId, tableNumber: selectedTable.tableNumber, seatsToTake: seatsToTake });
 
 		// update the number of people left to allocate
 		peopleLeft -= seatsToTake;
