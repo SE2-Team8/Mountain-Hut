@@ -226,6 +226,37 @@
 				}
 			}
 		},
+		"/timeslots/availability":{
+			"get": {
+				"tags": ["TimeSlots"],
+				"summary": "Get a time slot by a given date, start time and party size",
+				"parameters": [
+					{ "name": "start", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" }, "description": "The start datetime (ISO 8601)"},
+					{ "name": "partySize", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1 }, "description": "The number of people to reserve seats"}
+				],
+				"responses": {
+					"200": {
+						"description": "The matching time slot",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "$ref": "#/components/schemas/TimeSlotAvailable" }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": { "$ref": "#/components/responses/NotFound"}
+				}
+			}
+		},
 		"/timeslots/{start}": {
 			"get": {
 				"tags": ["TimeSlots"],
@@ -330,6 +361,14 @@
 					"totalSeats": { "type": "integer", "minimum": 1 }
 				}
 			},
+			"TableAvailability": {
+				"type": "object",
+				"required": ["tableNumber", "seatsToTake"],
+				"properties": {
+					"tableNumber": { "type": "integer", "minimum": 1 },
+					"seatsToTake": { "type": "integer", "minimum": 1 }
+				}
+			},
 			"TimeSlot": {
 				"type": "object",
 				"required": ["timeSlotId", "startDateTime", "endDateTime", "freeSeats"],
@@ -338,6 +377,15 @@
 					"startDateTime": { "type": "string", "format": "date-time" },
 					"endDateTime": { "type": "string", "format": "date-time" },
 					"freeSeats": { "type": "integer", "minimum": 0 }
+				}
+			},
+			"TimeSlotAvailable": {
+				"type": "object",
+				"required": ["available", "freeSeats", "tables"],
+				"properties": {
+					"available": { "type": "boolean" },
+					"freeSeats": { "type": "integer", "minimum": 0},
+					"tables": { "type": "array", "minItems": 0, "items": { "$ref": "#/components/schemas/TableAvailability" } }
 				}
 			},
 			"CreateTimeSlotWithTables": {
