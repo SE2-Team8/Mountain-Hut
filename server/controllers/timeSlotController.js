@@ -25,7 +25,7 @@ const timeSlotController = {
         if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
         else{
             const configuration = await checkSlotAvailability(slot.timeSlotId, req.query.partySize);
-            return responseSuccess(res, configuration, "Configuration Retrivied")
+            return responseSuccess(res, configuration, "Configuration Retrived")
         }
     },
 
