@@ -82,9 +82,10 @@ async function checkSlotAvailability(timeSlotId, partySize) {
 	const slot = await getTimeSlotById(timeSlotId);
 	if (!slot) return null;
 
-	const selected = await getAvailableTables(timeSlotId, partySize);
+	const size = Number(partySize)
+	const selected = await getAvailableTables(timeSlotId, size);
 	if (selected.length === 0)
-		return { available: false, freeSeats: 0, tables: [] }
+		return { available: false, freeSeats: slot.freeSeats, tables: [] }
 
 	return {
 		available: true,
