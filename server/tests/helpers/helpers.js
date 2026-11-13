@@ -16,12 +16,14 @@ export const USERS = {
 
 const TABLE_LIST_1 = [6, 4, 6, 6, 4, 8]; 
 const TABLE_LIST_2 = [4, 4, 4, 6, 6, 6]; 
+const TABLE_LIST_3 = [4, 6, 8]; 
 
 export const SLOTS = [
 	{ start: Date.UTC(2027, 2, 10, 12, 30), end: Date.UTC(2027, 2, 10, 14, 30), tables: TABLE_LIST_1 },
 	{ start: Date.UTC(2027, 2, 10, 18, 30), end: Date.UTC(2027, 2, 10, 19, 30), tables: TABLE_LIST_2 },
 	{ start: Date.UTC(2027, 2, 10, 19, 30), end: Date.UTC(2027, 2, 10, 21, 0), tables: TABLE_LIST_2 },
 	{ start: Date.UTC(2027, 2, 11, 12, 0), end: Date.UTC(2027, 2, 11, 14, 0), tables: [] },
+	{ start: Date.UTC(2027, 2, 12, 12, 0), end: Date.UTC(2027, 2, 12, 14, 0), tables: TABLE_LIST_3 },
 ].map((s) => ({
 	...s,
 	startISO: dateToStringISO(new Date(s.start)),

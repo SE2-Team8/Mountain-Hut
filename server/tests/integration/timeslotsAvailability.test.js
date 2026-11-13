@@ -52,7 +52,7 @@ describe("GET /api/timeslots/availability", () => {
 	});
 
 	// correct configuration:
-	it("200 and tables assigned seats equals party size", async () => {
+	it("200 and tables assigned seats sum equals party size", async () => {
 		const slot = SLOTS[0];
 		const totalSeats = slot.tables.reduce((total, seats) => total + seats);
 		const expected = {
@@ -66,9 +66,6 @@ describe("GET /api/timeslots/availability", () => {
 			})
 		};
 
-		console.log(totalSeats)
-		console.log(slot.startISO)
-		console.log(expected, slot.startISO)
 		const res = await request(app).get("/api/timeslots/availability")
 		.query({ start: slot.startISO, partySize: totalSeats },);
 		expect(res.status).toBe(200);
@@ -85,9 +82,6 @@ describe("GET /api/timeslots/availability", () => {
 			tables: []
 		};
 
-		console.log(totalSeats)
-		console.log(slot.startISO)
-		console.log(expected, slot.startISO)
 		const res = await request(app).get("/api/timeslots/availability")
 		.query({ start: slot.startISO, partySize: totalSeats + 1 },);
 		expect(res.status).toBe(200);
@@ -95,5 +89,31 @@ describe("GET /api/timeslots/availability", () => {
 		expect(res.body.data).toEqual(expected);
 	});
 
-	// TODO: check when not all seats are checked, that the correct selection strategy is applied
+	it.each([
+		[1, [{tableNumber: 1, seatsToTake: 1}]],
+		[2, [{tableNumber: 1, seatsToTake: 2}]],
+		[4, [{tableNumber: 1, seatsToTake: 4}]],
+		[5, [{tableNumber: 2, seatsToTake: 5}]],
+		[7, [{tableNumber: 3, seatsToTake: 7}]],
+		[8, [{tableNumber: 3, seatsToTake: 8}]],
+		[9, [{tableNumber: 1, seatsToTake: 1}, {tableNumber: 3, seatsToTake: 8}]],
+		[12, [{tableNumber: 1, seatsToTake: 4}, {tableNumber: 3, seatsToTake: 8}]],
+		[14, [{tableNumber: 2, seatsToTake: 6}, {tableNumber: 3, seatsToTake: 8}]],
+		[15, [{tableNumber: 1, seatsToTake: 1}, {tableNumber: 2, seatsToTake: 6}, {tableNumber: 3, seatsToTake: 8}]],
+	])
+	("200 and correct tables are assigned for various party sizes", async (partySize, expectedTables) => {
+		const slot = SLOTS[4]; // slot with table list 3
+		const totalSeats = slot.tables.reduce((total, seats) => total + seats);
+		const expected = {
+			available: true,
+			freeSeats: totalSeats,
+			tables: expectedTables
+		};
+
+		const res = await request(app).get("/api/timeslots/availability")
+		.query({ start: slot.startISO, partySize: partySize },);
+		expect(res.status).toBe(200);
+		expectEnvelope(res, true);
+		expect(res.body.data).toEqual(expected);
+	});
 });

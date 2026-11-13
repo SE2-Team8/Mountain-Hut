@@ -116,8 +116,11 @@ describe("POST /api/timeslots/reservation - success", () => {
 
 		const one = await request(app).get(`/api/timeslots/${S1.startISO}`);
 		expect(one.body.data.freeSeats).toBe(S1.totalSeats - 5);
+		
+		let expectedFreeSeats = SLOTS.map(slot => slot.totalSeats);
+		expectedFreeSeats[0] -= 5;
 		const all = await request(app).get("/api/timeslots");
-		expect(all.body.data.map((s) => s.freeSeats)).toEqual([S1.totalSeats - 5, S2.totalSeats, S2.totalSeats, 0]);
+		expect(all.body.data.map((s) => s.freeSeats)).toEqual(expectedFreeSeats);
 	});
 
 	it("different users can book the same slot", async () => {
