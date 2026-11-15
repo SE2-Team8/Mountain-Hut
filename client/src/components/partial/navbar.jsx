@@ -82,7 +82,7 @@ function Navbar() {
                             </>
                         ) : (
                             location.pathname !== '/auth/login' && (
-                                <Button size="sm" asChild>Menu
+                                <Button size="sm" asChild>
                                     <Link to="/auth/login" viewTransition><LogIn />Login</Link>
                                 </Button>
                             )
