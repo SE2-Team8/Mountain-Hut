@@ -1,0 +1,12 @@
+.git
+.env*
+**/.env*
+**/node_modules
+**/dist
+**/*.sqlite
+**/*.sqlite-*
+server/tests
+server/vitest.config.js
+server/DEVELOPMENT.md
+server/httprequest.http
+client/DEVELOPMENT.md
