@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("../../repositories/timeSlotRepository.js", () => ({
   getAllTimeSlots: vi.fn(),
   getTimeSlotByStart: vi.fn(),
+  checkSlotAvailability: vi.fn(),
   getTimeSlotById: vi.fn(),
   createTimeSlot: vi.fn(),
     TimeSlot: vi.fn(function (timeSlotId, startDateTime, endDateTime, freeSeats) {
@@ -14,7 +15,7 @@ vi.mock("../../repositories/timeSlotRepository.js", () => ({
 }));
 vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseError: vi.fn() }));
 
-import { createTimeSlot, getTimeSlotById, getAllTimeSlots, getTimeSlotByStart, TimeSlot } from "../../repositories/timeSlotRepository.js";
+import { createTimeSlot, getTimeSlotById, getAllTimeSlots, getTimeSlotByStart, checkSlotAvailability, TimeSlot } from "../../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../../utils/response.js";
 import timeSlotController from "../../controllers/timeSlotController.js";
 
@@ -28,6 +29,49 @@ describe("timeSlotController.getByStart", () => {
     expect(responseError.mock.calls[0][3]).toBe(404);
     expect(responseSuccess).not.toHaveBeenCalled();
   });
+});
+
+describe("timeSlotController.getByStartAndPartySize", () => {
+	const start = "2027-03-10T18:30:00Z";
+	const slot = new TimeSlot(1, new Date(start), new Date("2027-03-10T19:30:00Z"), 34);
+
+	it("returns the table configuration for the requested party size", async () => {
+		const res = {};
+		const configuration = {
+			available: true,
+			freeSeats: 34,
+			tables: [
+				{ tableNumber: 2, seatsToTake: 1 },
+				{ tableNumber: 4, seatsToTake: 6 },
+				{ tableNumber: 6, seatsToTake: 8 },
+			],
+		};
+		getTimeSlotByStart.mockResolvedValue(slot);
+		checkSlotAvailability.mockResolvedValue(configuration);
+
+		await timeSlotController.getByStartAndPartySize({ query: { start, partySize: 15 } }, res);
+
+		expect(getTimeSlotByStart).toHaveBeenCalledWith(new Date(start));
+		expect(checkSlotAvailability).toHaveBeenCalledWith(slot.timeSlotId, 15);
+		expect(responseSuccess).toHaveBeenCalledWith(res, configuration, "Configuration Retrived");
+		expect(responseError).not.toHaveBeenCalled();
+	});
+
+	it("answers 404 when the requested time slot does not exist", async () => {
+		const res = {};
+		getTimeSlotByStart.mockResolvedValue(null);
+
+		await timeSlotController.getByStartAndPartySize({ query: { start, partySize: 15 } }, res);
+
+		expect(responseError).toHaveBeenCalledWith(
+			res,
+			null,
+			expect.stringContaining("not found"),
+			404
+		);
+		expect(checkSlotAvailability).not.toHaveBeenCalled();
+		expect(responseSuccess).not.toHaveBeenCalled();
+	});
 });
 
 
