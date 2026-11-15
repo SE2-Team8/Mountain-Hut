@@ -37,12 +37,12 @@ const router = createBrowserRouter([
             {
                 path: 'reservations',
                 Component: PageReservations,
-                middleware: [auth],
+                middleware: [auth("/reservations")],
             },
             {
                 path: 'capacity',
                 Component: PageCapacity,
-                middleware: [auth],
+                middleware: [auth("/capacity")],
             },
         ]
     },

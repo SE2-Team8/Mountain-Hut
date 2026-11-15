@@ -9,6 +9,7 @@ import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../assets/css/auth.css"
 import useUserStore from "@/store/user";
+import usePageStore from "@/store/pageStore";
 
 function PageLogin() {
   const navigate = useNavigate();
@@ -34,13 +35,21 @@ function PageLogin() {
     const response = await api.auth.login(data);
     if (response?.success ){
       setUser(response.data);
-      navigate('/', {viewTransition: true});
+	  let targetPage = "/";
+	  const comingFromPage = usePageStore.getState().getPageData("/auth/login")?.comingFrom;
+	  if (comingFromPage) {
+		usePageStore.getState().deletePageData("/auth/login");
+		targetPage = comingFromPage;
+	  }
+	  console.log("Sending user to ", targetPage);
+      navigate(targetPage, {viewTransition: true});
     }
   }
 
   return (
     <Card>
       <CardHeader>
+		
         <CardTitle>Login to your account</CardTitle>
         <CardDescription>
           Enter your email below to login to your account
