@@ -35,6 +35,7 @@ function Navbar() {
 
     const links = [
         { to: "/", label: "Home", end: true },
+        { to: "/availability", label: "Availability" },
         ...(!isStaff ? [{ to: "/reservations", label: "Reservations" }] : []),
         ...(isStaff ? [{ to: "/capacity", label: "Define capacity" }] : []),
     ];
