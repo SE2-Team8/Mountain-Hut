@@ -11,6 +11,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/utils/date";
 import { useNavigate } from "react-router";
+import usePageStore from "@/store/pageStore";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
@@ -100,15 +101,23 @@ function PageReservations() {
     }
   });
 
+  const pageStore = usePageStore.getState();
+  const reservData = pageStore.getPageData("/reservations");
+  const formInitialValues = reservData? {
+	  from: toDateTimeLocal(reservData.startDateTime),
+	  to: toDateTimeLocal(reservData.endDateTime),
+      timeSlotId: "",
+      partySize: reservData.partySize,
+	} : {
+      ...todayRange,
+      timeSlotId: "",
+      partySize: 1,
+    };
   const form = useForm({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     reValidateMode: "onChange",
-    defaultValues: {
-      ...todayRange,
-      timeSlotId: "",
-      partySize: 1,
-    },
+    defaultValues: formInitialValues,
   });
 
   const { handleSubmit, setValue, trigger, control, formState } = form;
@@ -153,7 +162,7 @@ function PageReservations() {
 
   useEffect(() => {
     setValue("timeSlotId", "");
-    setValue("partySize", 1);
+    setValue("partySize", formInitialValues.partySize);
 
     if (rangeIsValid) {
       let active = true;

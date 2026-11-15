@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, CheckCircle2, Clock3, Search, Users, XCircle, LogIn } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, Search, Users, XCircle } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import * as zod from "zod";
 import api from "@/api";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { dateAndTimeStringsToDate, formatDateTime } from "@/utils/date";
 import { Link } from "react-router";
 import usePageStore from "@/store/pageStore";
+
+const pageStore = usePageStore.getState();
 
 const availabilitySchema = zod.object({
   date: zod.iso.date("Choose a valid date."),
@@ -30,6 +32,7 @@ function getLocalDateValue() {
 
 function PageAvailability() {
   const [result, setResult] = useState(null);
+  const [reservData, setReservData] = useState(null);
   const form = useForm({
     resolver: zodResolver(availabilitySchema),
     mode: "onSubmit",
@@ -45,6 +48,7 @@ function PageAvailability() {
 
   async function handleCheckAvailability(values) {
     const requestedDateTime = dateAndTimeStringsToDate(values.date, values.time);
+	const requestedPartySize = values.partySize;
     const requestedStart = requestedDateTime.toISOString();
     const requestedFormattedStart = formatDateTime(requestedDateTime);
     setResult(null);
@@ -52,12 +56,17 @@ function PageAvailability() {
     try {
       const response = await api.timeslots.checkAvailability({
         start: requestedStart,
-        partySize: values.partySize,
+        partySize: requestedPartySize,
       });
 
       if (response?.success && response.data) {
         setResult({ kind: "checked", data: response.data, formattedStart: requestedFormattedStart, partySize: values.partySize });
-      } else if (response?.response?.status === 404) {
+        setReservData({
+			startDateTime: requestedDateTime,
+			endDateTime: requestedDateTime,
+			partySize: requestedPartySize
+		});
+	  } else if (response?.status === 404) {
         setResult({ kind: "missing", formattedStart: requestedFormattedStart });
       } else {
         setResult({ kind: "error" });
@@ -84,14 +93,6 @@ function PageAvailability() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-			{/* TEST BUTTON (TODO: remove) */}
-			<Button size="lg" variant="outline" className="w-full sm:w-48" asChild>
-				<Link to="/reservations" viewTransition onClick={() => {
-					console.log("Button clicked");
-					// TODO: set reservation data
-					// usePageStore.getState().setPageData("/reservations", { comingFrom: "/availability" });
-				}} ><LogIn />Make a reservation!</Link>
-			</Button>
           <form onSubmit={handleSubmit(handleCheckAvailability)}>
             <FieldGroup>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -206,7 +207,17 @@ function PageAvailability() {
                       {result.data.freeSeats} {result.data.freeSeats === 1 ? "seat is" : "seats are"} currently free in total.
                     </p>
                   </div>
+
+				<Button type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
+					<Link to="/reservations" viewTransition onClick={() => {
+						// set reservation data
+						pageStore.setPageData("/reservations", reservData);
+						// console.log("Button clicked");
+						// console.log(reservData);
+					}} >Make a reservation!</Link>
+				</Button>
                 </div>
+				
               ) : result.kind === "checked" ? (
                 <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5" role="status">
                   <div className="flex items-start gap-3">

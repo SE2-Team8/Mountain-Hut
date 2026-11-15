@@ -41,7 +41,7 @@ function PageLogin() {
 		usePageStore.getState().deletePageData("/auth/login");
 		targetPage = comingFromPage;
 	  }
-	  console.log("Sending user to ", targetPage);
+	//   console.log("Sending user to ", targetPage);
       navigate(targetPage, {viewTransition: true});
     }
   }
