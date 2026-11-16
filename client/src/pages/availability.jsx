@@ -40,7 +40,7 @@ function PageAvailability() {
     defaultValues: {
       date: getLocalDateValue(),
       time: "",
-      partySize: "2",
+      partySize: "1",
     },
   });
 
@@ -48,7 +48,7 @@ function PageAvailability() {
 
   async function handleCheckAvailability(values) {
     const requestedDateTime = dateAndTimeStringsToDate(values.date, values.time);
-	const requestedPartySize = values.partySize;
+	  const requestedPartySize = values.partySize;
     const requestedStart = requestedDateTime.toISOString();
     const requestedFormattedStart = formatDateTime(requestedDateTime);
     setResult(null);
@@ -62,10 +62,10 @@ function PageAvailability() {
       if (response?.success && response.data) {
         setResult({ kind: "checked", data: response.data, formattedStart: requestedFormattedStart, partySize: values.partySize });
         setReservData({
-			startDateTime: requestedDateTime,
-			endDateTime: requestedDateTime,
-			partySize: requestedPartySize
-		});
+          startDateTime: requestedDateTime,
+          endDateTime: requestedDateTime,
+          partySize: requestedPartySize
+        });
 	  } else if (response?.status === 404) {
         setResult({ kind: "missing", formattedStart: requestedFormattedStart });
       } else {
@@ -208,14 +208,14 @@ function PageAvailability() {
                     </p>
                   </div>
 
-				<Button type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
-					<Link to="/reservations" viewTransition onClick={() => {
-						// set reservation data
-						pageStore.setPageData("/reservations", reservData);
-						// console.log("Button clicked");
-						// console.log(reservData);
-					}} >Make a reservation!</Link>
-				</Button>
+                  <Button type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
+                    <Link to="/reservations" viewTransition onClick={() => {
+                      // set reservation data
+                      pageStore.setPageData("/reservations", reservData);
+                      // console.log("Button clicked");
+                      // console.log(reservData);
+                    }} >Make a reservation!</Link>
+                  </Button>
                 </div>
 				
               ) : result.kind === "checked" ? (

@@ -132,6 +132,7 @@ function PageReservations() {
   const isLoading = rangeIsValid && (loading || !rangeAvailability);
   const selectedSlot = slots.find((slot) => slot.timeSlotId === Number(timeSlotId));
   const bookableSlots = slots.filter(isBookable);
+  const onlyOne = bookableSlots.length == 1 ? true : false;
 
   const fetchAvailability = useCallback(async (rangeStart, rangeEnd, isCurrent = () => true) => {
     setLoading(true);
@@ -296,7 +297,7 @@ function PageReservations() {
                             <Button
                               key={slot.timeSlotId}
                               type="button"
-                              variant={isSelected ? "default" : "outline"}
+                              variant={onlyOne ? "default" : isSelected ? "default" : "outline"}
                               className="h-auto min-h-16 justify-between gap-3 whitespace-normal rounded-xl px-4 py-3 text-left"
                               aria-pressed={isSelected}
                               disabled={formState.isSubmitting}
@@ -338,7 +339,7 @@ function PageReservations() {
                         min={1}
                         step={1}
                         value={field.value ?? ""}
-                        disabled={!selectedSlot || formState.isSubmitting}
+                        disabled={(!onlyOne && !selectedSlot) || formState.isSubmitting}
                         className="pl-10"
                         onChange={(event) => field.onChange(event.target.value === "" ? "" : Number(event.target.value))}
                         aria-invalid={fieldState.invalid}
