@@ -9,18 +9,19 @@
 		{ "url": "http://localhost:3001/api", "description": "Development server" }
 	],
 	"tags": [
+		{ "name": "Auth" },
 		{ "name": "Users" },
 		{ "name": "TimeSlots" },
 		{ "name": "Reservations" }
 	],
 	"paths": {
-		"/users/{id}": {
+		"/users/{userId}": {
 			"get": {
 				"tags": ["Users"],
 				"summary": "Get a user by ID",
 				"description": "Requires an authenticated user with role EMPLOYEE or WARDEN.",
 				"parameters": [
-					{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+					{ "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
 				],
 				"responses": {
 					"200": {
@@ -45,9 +46,9 @@
 				}
 			}
 		},
-		"/sessions": {
+		"/auth/login": {
 			"post": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Log in (create a session)",
 				"description": "Authenticates with email and password using the local strategy. Sets a session cookie on success.",
 				"requestBody": {
@@ -75,9 +76,9 @@
 				}
 			}
 		},
-		"/sessions/current": {
+		"/auth/me": {
 			"get": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Get the currently logged-in user",
 				"security": [{ "cookieAuth": [] }],
 				"responses": {
@@ -99,9 +100,11 @@
 					},
 					"401": { "$ref": "#/components/responses/Unauthorized" }
 				}
-			},
-			"delete": {
-				"tags": ["Users"],
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"tags": ["Auth"],
 				"summary": "Log out (destroy the current session)",
 				"responses": { "200": {
 					"description": "Logout successful",
@@ -122,9 +125,9 @@
 				}
 			}
 		},
-		"/register": {
+		"/auth/register": {
 			"post": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Register a new user",
 				"requestBody": {
 					"required": true,
@@ -288,7 +291,7 @@
 				}
 			}
 		},
-		"/timeslots/reservation": {
+		"/reservations": {
 			"post": {
 				"tags": ["Reservations"],
 				"summary": "Create a reservation",

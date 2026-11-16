@@ -3,7 +3,7 @@ import { responseError, responseSuccess } from "../utils/response.js";
 
 const userController = {
     get: async (req, res) => {
-        const user = await getUser(req.params.id);
+        const user = await getUser(req.params.userId);
 
         if (!user) return responseError(res, null, "Not found", 404);
 

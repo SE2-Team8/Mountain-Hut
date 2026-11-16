@@ -186,7 +186,7 @@ function PageReservations() {
   }
 
   async function handleReservation(data) {
-    const response = await api.timeslots.reserve({
+    const response = await api.reservations.create({
       timeSlotId: data.timeSlotId,
       partySize: data.partySize,
     });

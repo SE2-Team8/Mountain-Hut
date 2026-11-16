@@ -14,7 +14,7 @@ const NOW = "2027-03-09T12:30:00Z";
 const HOUR = 3600e3;
 
 let slot1, slot2;
-const book = (agent, timeSlotId, partySize) => agent.post("/api/timeslots/reservation").send({ timeSlotId, partySize });
+const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send({ timeSlotId, partySize });
 
 beforeAll(initSchema);
 beforeEach(async () => {
@@ -33,7 +33,7 @@ async function expectNothingBooked() {
 	expect(await getFreeSeats(slot1)).toBe(S1.totalSeats);
 }
 
-describe("POST /api/timeslots/reservation - authentication", () => {
+describe("POST /api/reservations - authentication", () => {
 	it("401 without a session, and nothing is booked", async () => {
 		const res = await book(request(app), slot1, 2);
 
@@ -43,14 +43,14 @@ describe("POST /api/timeslots/reservation - authentication", () => {
 	});
 });
 
-describe("POST /api/timeslots/reservation - input validation", () => {
+describe("POST /api/reservations - input validation", () => {
 	it.each([
 		["a timeSlotId that is not a number", { timeSlotId: "abc", partySize: 2 }],
 		["a partySize of 0", { timeSlotId: 1, partySize: 0 }],
 		["a partySize that is not a number", { timeSlotId: 1, partySize: "many" }],
 	])("422 for %s", async (_label, body) => {
 		const agent = await loginAsRole("hiker");
-		const res = await agent.post("/api/timeslots/reservation").send(body);
+		const res = await agent.post("/api/reservations").send(body);
 
 		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
@@ -62,7 +62,7 @@ describe("POST /api/timeslots/reservation - input validation", () => {
 		["a missing partySize", { timeSlotId: 1 }],
 	])("400 for %s: the body must have exactly 2 fields", async (_label, body) => {
 		const agent = await loginAsRole("hiker");
-		const res = await agent.post("/api/timeslots/reservation").send(body);
+		const res = await agent.post("/api/reservations").send(body);
 
 		expect(res.status).toBe(400);
 		expectEnvelope(res, false);
@@ -72,7 +72,7 @@ describe("POST /api/timeslots/reservation - input validation", () => {
 	it("nobody can book on behalf of another user: a userId in the body is refused", async () => {
 		const agent = await loginAsRole("hiker");
 		const otherUser = await getUserId(USERS.hiker2.email);
-		const res = await agent.post("/api/timeslots/reservation").send({ timeSlotId: slot1, partySize: 2, userId: otherUser });
+		const res = await agent.post("/api/reservations").send({ timeSlotId: slot1, partySize: 2, userId: otherUser });
 
 		expect(res.status).toBe(400);
 		await expectNothingBooked();
@@ -88,7 +88,7 @@ describe("POST /api/timeslots/reservation - input validation", () => {
 	});
 });
 
-describe("POST /api/timeslots/reservation - success", () => {
+describe("POST /api/reservations - success", () => {
 	it("201 and the id of a reservation owned by the logged user", async () => {
 		const agent = await loginAsRole("hiker");
 		const res = await book(agent, slot1, 4);
@@ -150,7 +150,7 @@ describe("POST /api/timeslots/reservation - success", () => {
 	// After registration, the session stores just the id, so req.user.usrId is undefined 
 	it("a user can book right after registering (the automatic login works)", async () => {
 		const agent = request.agent(app);
-		await agent.post("/api/register").send({
+		await agent.post("/api/auth/register").send({
 			email: "new.hiker@example.com", password: "s3cret!", fullName: "New Hiker",
 			phone: "+39 333 1112222", notes: "n", emergencyContact: "e",
 		}).expect(201);
@@ -160,7 +160,7 @@ describe("POST /api/timeslots/reservation - success", () => {
 	});
 });
 
-describe("POST /api/timeslots/reservation - one reservation per user per slot", () => {
+describe("POST /api/reservations - one reservation per user per slot", () => {
 	it("409 on the second booking of the same slot, and nothing else changes", async () => {
 		const agent = await loginAsRole("hiker");
 		await book(agent, slot1, 2).expect(201);
@@ -172,7 +172,7 @@ describe("POST /api/timeslots/reservation - one reservation per user per slot", 
 	});
 });
 
-describe("POST /api/timeslots/reservation - 2 hours rule", () => {
+describe("POST /api/reservations - 2 hours rule", () => {
 	const START = Date.parse(S1.startISO);
 	const at = (msBeforeStart) => freezeTime(START - msBeforeStart);
 
@@ -204,7 +204,7 @@ describe("POST /api/timeslots/reservation - 2 hours rule", () => {
 	});
 });
 
-describe("POST /api/timeslots/reservation - email notification", () => {
+describe("POST /api/reservations - email notification", () => {
 	it("sends a confirmation email containing the rendered HTML template", async () => {
 		const agent = await loginAsRole("hiker");
 
@@ -235,7 +235,7 @@ describe("POST /api/timeslots/reservation - email notification", () => {
 		sendMail.mockClear();
 
 		// Prenotazione fallita (es. partySize 0)
-		const res = await agent.post("/api/timeslots/reservation").send({ timeSlotId: slot1, partySize: 0 });
+		const res = await agent.post("/api/reservations").send({ timeSlotId: slot1, partySize: 0 });
 		expect(res.status).toBe(422);
 
 		expect(sendMail).not.toHaveBeenCalled();

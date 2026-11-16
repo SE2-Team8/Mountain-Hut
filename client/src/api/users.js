@@ -1,7 +1,7 @@
 import httpClient from "@/lib/http-client";
 
 const usersApi = {
-    get: (id) => httpClient.get(`/users/${id}`)
+    get: (userId) => httpClient.get(`/users/${userId}`)
 };
 
 export default usersApi;

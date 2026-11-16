@@ -36,7 +36,7 @@ describe("CORS", () => {
 
 	it("answers the preflight of an allowed origin", async () => {
 		const res = await request(app)
-			.options("/api/sessions")
+			.options("/api/auth/login")
 			.set("Origin", "http://localhost:5173")
 			.set("Access-Control-Request-Method", "POST")
 			.set("Access-Control-Request-Headers", "content-type");

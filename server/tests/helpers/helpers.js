@@ -147,7 +147,7 @@ export const resetDb = async () => {
 
 export async function loginAs(email, password) {
 	const agent = request.agent(app);
-	const res = await agent.post("/api/sessions").send({ username: email, password });
+	const res = await agent.post("/api/auth/login").send({ username: email, password });
 	if (res.status !== 200)
 		throw new Error(`Login failed for ${email}: ${res.status}`);
 	return agent;

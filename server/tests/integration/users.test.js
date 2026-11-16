@@ -8,7 +8,7 @@ beforeAll(initSchema);
 beforeEach(resetDb);
 afterAll(() => db.close());
 
-describe("GET /api/users/:id", () => {
+describe("GET /api/users/:userId", () => {
 	it("401 with the standard error envelope when not authenticated", async () => {
 		const res = await request(app).get(`/api/users/${await getUserId(USERS.hiker.email)}`);
 
