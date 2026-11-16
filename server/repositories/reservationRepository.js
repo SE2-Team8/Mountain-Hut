@@ -110,7 +110,7 @@ async function getAvailableTables(timeSlotId, partySize) {
 // creates a reservation and returns the created reservation id.
 // the only enforced business rules inside this method are the party size < available seats
 // (other rules such as reservation time or author of the reservation must be checked somewhere else)
-async function createReservation(userId, timeSlotId, partySize) {
+async function createReservation(userId, timeSlotId, partySize, allergies, dietaryRequirements) {
 	return await withTransaction(async () => {
 		// get the available tables for the given slot and party size
 		const reservTables = await getAvailableTables(timeSlotId, partySize);
@@ -133,8 +133,8 @@ async function createReservation(userId, timeSlotId, partySize) {
 		// create actual reservation
 		const queryRes = await queryRun(
 			`INSERT INTO reservations
-			(userId, timeSlotId, partySize) VALUES (?, ?, ?)`, 
-			[userId, timeSlotId, partySize]
+			(userId, timeSlotId, partySize, allergies, dietaryRequirements) VALUES (?, ?, ?, ?, ?)`, 
+			[userId, timeSlotId, partySize, allergies == true ? 1 : 0, JSON.stringify(dietaryRequirements)]
 		);
 		const reservId = queryRes.lastID;
 		

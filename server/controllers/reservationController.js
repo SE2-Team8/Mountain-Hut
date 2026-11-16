@@ -6,8 +6,11 @@ import { responseError, responseSuccess } from "../utils/response.js";
 
 const reservationController = {
 	create: async (req, res) => {
-		const { timeSlotId, partySize } = req.body;
+		const { timeSlotId, partySize, allergies, dietaryRequirements } = req.body;
 		const userId = req.user.userId;
+
+		if (allergies == true && dietaryRequirements.length == 0) return responseError(res, null, `If there are allergies, they must be specified`, 422);
+		const finalDietaryRequirements = allergies == true ? dietaryRequirements : [];
 
 		const timeSlot = await getTimeSlotById(timeSlotId);
 		if (!timeSlot) return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
@@ -23,7 +26,7 @@ const reservationController = {
 
 		if (timeSlot.freeSeats < partySize) return responseError(res, null, "Not enough free seats", 400);
 
-		const reservId = await createReservation(userId, timeSlotId, partySize);
+		const reservId = await createReservation(userId, timeSlotId, partySize, allergies, finalDietaryRequirements);
 
 		await sendTemplateEmail({
 			to: req.user.email,
@@ -38,6 +41,8 @@ const reservationController = {
 					userId,
 					timeSlotId,
 					partySize,
+					allergies: allergies == true? "Yes" : "No",
+					finalDietaryRequirements: finalDietaryRequirements.length > 0 ? finalDietaryRequirements.join(", ") : "None"
 				},
 				timeSlot: {
 					timeSlotId: timeSlot.timeSlotId,

@@ -411,10 +411,12 @@
 			},
 			"CreateReservationRequest": {
 				"type": "object",
-				"required": ["timeSlotId", "partySize"],
+				"required": ["timeSlotId", "partySize", "allergies", "dietaryRequirements"],
 				"properties": {
 					"timeSlotId": { "type": "integer", "minimum": 1 },
-					"partySize": { "type": "integer", "minimum": 1 }
+					"partySize": { "type": "integer", "minimum": 1 },
+					"allergies": { "type": "boolean"},
+					"dietaryRequirements": { "type": "array", "items": { "type": "string" } }
 				}
 			},
 			"Reservation": {
