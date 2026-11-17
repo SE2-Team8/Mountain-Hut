@@ -37,7 +37,7 @@ beforeEach(() => {
   queryGet.mockResolvedValue(undefined);
 });
 
-describe("createReservation - single table", () => {
+describe("createReservation - tables", () => {
   it("uses the table whose free seats exactly match the party", async () => {
     givenFreeTables(table(1, 8), table(2, 4), table(3, 6));
     await createReservation(USER_ID, TIME_SLOT_ID, 4);
@@ -118,12 +118,22 @@ describe("createReservation - split over more tables", () => {
 });
 
 describe("createReservation - results and persistence", () => {
-  it("inserts the reservation and returns its id", async () => {
+
+	const dietaryNotes = ["No nuts", "I can't eaty fish"];
+	it.each(
+	[
+		[[USER_ID, TIME_SLOT_ID, 3, false, []], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify([])]],
+		[[USER_ID, TIME_SLOT_ID, 3, true, []], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify([])]],
+		[[USER_ID, TIME_SLOT_ID, 3, true, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify(dietaryNotes)]],
+		[[USER_ID, TIME_SLOT_ID, 3, false, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify(dietaryNotes)]],
+	]
+  )("inserts the reservation and returns its id", async (args, expected) => {
     givenFreeTables(table(1, 4));
-    const id = await createReservation(USER_ID, TIME_SLOT_ID, 3);
+
+    const id = await createReservation(...args);
 
     expect(id).toBe(42);
-    expect(writes("INSERT INTO reservations")[0][1]).toEqual([USER_ID, TIME_SLOT_ID, 3]);
+    expect(writes("INSERT INTO reservations")[0][1]).toEqual(expected);
   });
 
   it("only queries tables of the requested time slot", async () => {
