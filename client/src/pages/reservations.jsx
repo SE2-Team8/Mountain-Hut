@@ -16,7 +16,7 @@ import RequirementsSection from "@/components/ui/requirementsSection";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
-const EMPTY_ITEM = Object.freeze({ people: 1, name: "" });
+const EMPTY_ITEM = Object.freeze({ allergies: false, people: 1, description: "" });
 
 function toDateTimeLocal(date) {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -47,48 +47,27 @@ function isBookable(slot) {
   return Number(slot.freeSeats) > 0
     && new Date(slot.startDateTime).getTime() - Date.now() >= RESERVATION_CUTOFF_MS;
 }
+
 const requirementItemSchema = zod.object({
+  allergies: zod.boolean(),
   people: zod.union([zod.number(), zod.literal("")]),
-  name: zod.string(),
+  description: zod.string(),
 });
 
-function getPartySizeError(items, partySize) {
-  const total = (items ?? []).reduce((sum, item) => sum + (Number.isInteger(item.people) ? item.people : 0), 0);
+function getPartySizeErrors(items, partySize) {
+  if (!(partySize >= 1)) return [];
 
-  return partySize >= 1 && total > partySize
-    ? `The total number of people exceeds the party size `
-    : null;
-}
+  const totalPeople = (allergies) => (items ?? [])
+    .filter((item) => item.allergies === allergies)
+    .reduce((sum, item) => sum + (Number.isInteger(item.people) ? item.people : 0), 0);
 
-function validateItems(enabled, items, listName, partySize, context) {
-  if (!enabled) return;
+  const allergicPeople = totalPeople(true);
+  const otherPeople = totalPeople(false);
 
-  items.forEach((item, index) => {
-    if (!Number.isInteger(item.people) || item.people < 1) {
-      context.addIssue({
-        code: "custom",
-        path: [listName, index, "people"],
-        message: "Enter at least 1 person",
-      });
-    }
-
-    if (!item.name.trim()) {
-      context.addIssue({
-        code: "custom",
-        path: [listName, index, "name"],
-        message: "This field is required",
-      });
-    }
-  });
-
-  const partySizeError = getPartySizeError(items, partySize);
-  if (partySizeError) {
-    context.addIssue({
-      code: "custom",
-      path: [listName],
-      message: partySizeError,
-    });
-  }
+  return [
+    allergicPeople > partySize && `The number of people with allergies exceeds the party size`,
+    otherPeople > partySize && `The number of people with dietary requirements exceeds the party size`,
+  ].filter(Boolean);
 }
 
 function PageReservations() {
@@ -102,10 +81,7 @@ function PageReservations() {
     to: zod.string().min(1, "End date and time are required"),
     timeSlotId: zod.string().min(1, "Choose an available time slot").transform(Number),
     partySize: zod.coerce.number().int().min(1, "Enter at least 1 person"),
-    allergies: zod.boolean(),
-    allergyItems: zod.array(requirementItemSchema),
-    hasDietaryRequirements: zod.boolean(),
-    dietaryItems: zod.array(requirementItemSchema),
+    dietaryRequirements: zod.array(requirementItemSchema),
   }).superRefine((values, context) => {
     if (values.from && values.to && !isValidRange(values.from, values.to)) {
       context.addIssue({
@@ -115,8 +91,31 @@ function PageReservations() {
       });
     }
 
-    validateItems(values.allergies, values.allergyItems, "allergyItems", values.partySize, context);
-    validateItems(values.hasDietaryRequirements, values.dietaryItems, "dietaryItems", values.partySize, context);
+    values.dietaryRequirements.forEach((item, index) => {
+      if (!Number.isInteger(item.people) || item.people < 1) {
+        context.addIssue({
+          code: "custom",
+          path: ["dietaryRequirements", index, "people"],
+          message: "Enter at least 1 person",
+        });
+      }
+
+      if (!item.description.trim()) {
+        context.addIssue({
+          code: "custom",
+          path: ["dietaryRequirements", index, "description"],
+          message: "This field is required",
+        });
+      }
+    });
+
+    getPartySizeErrors(values.dietaryRequirements, values.partySize).forEach((message) => {
+      context.addIssue({
+        code: "custom",
+        path: ["dietaryRequirements"],
+        message,
+      });
+    });
 
     const selectedSlot = slots.find((slot) => slot.timeSlotId === values.timeSlotId);
     if (!selectedSlot) {
@@ -160,18 +159,12 @@ function PageReservations() {
 	  to: toDateTimeLocal(reservData.endDateTime),
       timeSlotId: "",
       partySize: reservData.partySize,
-      allergies: false,
-      allergyItems: [{ ...EMPTY_ITEM }],
-      hasDietaryRequirements: false,
-      dietaryItems: [{ ...EMPTY_ITEM }],
+      dietaryRequirements: [],
 	} : {
       ...todayRange,
       timeSlotId: "",
       partySize: 1,
-      allergies: false,
-      allergyItems: [{ ...EMPTY_ITEM }],
-      hasDietaryRequirements: false,
-      dietaryItems: [{ ...EMPTY_ITEM }],
+      dietaryRequirements: [],
     };
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -185,10 +178,7 @@ function PageReservations() {
   const to = useWatch({ control, name: "to" });
   const timeSlotId = useWatch({ control, name: "timeSlotId" });
   const partySize = Number(useWatch({ control, name: "partySize" }));
-  const hasAllergies = useWatch({ control, name: "allergies" });
-  const allergyItems = useWatch({ control, name: "allergyItems" });
-  const hasDietaryRequirements = useWatch({ control, name: "hasDietaryRequirements" });
-  const dietaryItems = useWatch({ control, name: "dietaryItems" });
+  const dietaryRequirements = useWatch({ control, name: "dietaryRequirements" });
   const rangeKey = JSON.stringify([from, to]);
   const rangeIsValid = isValidRange(from, to);
   const rangeAvailability = availability.rangeKey === rangeKey ? availability : null;
@@ -252,19 +242,13 @@ function PageReservations() {
   }
 
   async function handleReservation(data) {
-        const dietaryRequirements = [
-      ...(data.allergies
-        ? data.allergyItems.map((item) => `${item.people} allergic to ${item.name.trim()}`)
-        : []),
-      ...(data.hasDietaryRequirements
-        ? data.dietaryItems.map((item) => `${item.people} ${item.name.trim()}`)
-        : []),
-    ];
     const response = await api.reservations.create({
       timeSlotId: data.timeSlotId,
       partySize: data.partySize,
-      allergies: data.allergies,
-      dietaryRequirements,
+      dietaryRequirements: data.dietaryRequirements.map((item) => ({
+        allergies: item.allergies,
+        description: `${item.people} ${item.description.trim()}`,
+      })),
     });
 
     if (response?.success) {
@@ -429,36 +413,15 @@ function PageReservations() {
                   </Field>
                 )}
               />
-              <div className="grid gap-6 sm:grid-cols-2 sm:gap-0">
-                <div className="sm:pr-4">
-                  <RequirementsSection
-                    control={control}
-                    trigger={trigger}
-                    toggleName="allergies"
-                    listName="allergyItems"
-                    title="Allergies"
-                    placeholder="e.g. peanuts"
-                    idPrefix="allergy"
-                    emptyItem={EMPTY_ITEM}
-                    error={hasAllergies ? getPartySizeError(allergyItems, partySize) : null}
-                    disabled={formState.isSubmitting}
-                  />
-                </div>
-                <div className="sm:border-l sm:pl-4">
-                  <RequirementsSection
-                    control={control}
-                    trigger={trigger}
-                    toggleName="hasDietaryRequirements"
-                    listName="dietaryItems"
-                    title="Dietary requirements"
-                    placeholder="e.g. vegetarian"
-                    idPrefix="dietary"
-                    emptyItem={EMPTY_ITEM}
-                    error={hasDietaryRequirements ? getPartySizeError(dietaryItems, partySize) : null}
-                    disabled={formState.isSubmitting}
-                  />
-                </div>
-              </div>
+
+              <RequirementsSection
+                control={control}
+                emptyItem={EMPTY_ITEM}
+                errors={getPartySizeErrors(dietaryRequirements, partySize)}
+                addDisabled={!onlyOne && !selectedSlot}
+                disabled={formState.isSubmitting}
+              />
+
               <Button
                 type="submit"
                 size="lg"
