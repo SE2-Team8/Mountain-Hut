@@ -229,7 +229,7 @@ describe("POST /api/reservations - requirements: confirmation email", () => {
 	});
 
     it("escapes the html written in a requirement", async () => {
-		await book(await loginAsRole("hiker"), { dietaryRequirements: ["<script>alert(1)</script>", true] });
+		await book(await loginAsRole("hiker"), { dietaryRequirements: [requirement("<script>alert(1)</script>", true)] });
 
 		expect(sentHtml()).not.toContain("<script>alert(1)</script>");
 		expect(sentHtml()).toContain("&lt;script&gt;");
