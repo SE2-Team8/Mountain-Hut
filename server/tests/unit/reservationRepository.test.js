@@ -37,7 +37,7 @@ beforeEach(() => {
   queryGet.mockResolvedValue(undefined);
 });
 
-describe("createReservation - single table", () => {
+describe("createReservation - tables", () => {
   it("uses the table whose free seats exactly match the party", async () => {
     givenFreeTables(table(1, 8), table(2, 4), table(3, 6));
     await createReservation(USER_ID, TIME_SLOT_ID, 4);
@@ -125,6 +125,7 @@ describe("createReservation - results and persistence", () => {
 		[[USER_ID, TIME_SLOT_ID, 3, false, []], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify([])]],
 		[[USER_ID, TIME_SLOT_ID, 3, true, []], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify([])]],
 		[[USER_ID, TIME_SLOT_ID, 3, true, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify(dietaryNotes)]],
+		[[USER_ID, TIME_SLOT_ID, 3, false, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify(dietaryNotes)]],
 	]
   )("inserts the reservation and returns its id", async (args, expected) => {
     givenFreeTables(table(1, 4));
