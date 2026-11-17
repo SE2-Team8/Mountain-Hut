@@ -11,6 +11,7 @@ import PageSignUp from "@/pages/signup";
 import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
 import auth from "@/middlewares/auth";
+import PageInspectReservation from "@/pages/inspectReservation";
 
 const router = createBrowserRouter([
     {
@@ -38,6 +39,11 @@ const router = createBrowserRouter([
                 path: 'reservations',
                 Component: PageReservations,
                 middleware: [auth("/reservations")],
+            },
+            {
+                path: 'reservations/:reservation_id',
+                Component: PageInspectReservation,
+                middleware: [auth("/reservations/:reservation_id")], // TODO: update this
             },
             {
                 path: 'capacity',

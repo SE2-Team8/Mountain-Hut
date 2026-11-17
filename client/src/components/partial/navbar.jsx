@@ -37,6 +37,7 @@ function Navbar() {
         { to: "/", label: "Home", end: true },
         { to: "/availability", label: "Availability" },
         ...(!isStaff ? [{ to: "/reservations", label: "Reservations" }] : []),
+        ...(!isStaff ? [{ to: "/reservations/1", label: "DEBUG INSPECT RESERVATION" }] : []), // TODO: remove (used for testing)
         ...(isStaff ? [{ to: "/capacity", label: "Define capacity" }] : []),
     ];
 
