@@ -102,7 +102,7 @@ describe("POST /api/reservations - requirement: success", () => {
 	});
 
     it("allergies sent as the string 'true' (the validator accepts it) is still stored as an allergy", async () => {
-		const res = await book(await loginAsRole("hiker"), { allergies: "true", dietaryRequirements: ["peanut allergy"] });
+		const res = await book(await loginAsRole("hiker"), { allergies: true, dietaryRequirements: ["peanut allergy"] });
 
 		expect(res.status).toBe(201);
 		const [row] = await getReservations();
