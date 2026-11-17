@@ -1,10 +1,12 @@
 import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
 
-function Reservation(reservId, timeSlotId, userId, partySize) {
+function Reservation(reservId, timeSlotId, userId, partySize, allergies, dietaryRequirements) {
 	this.reservId = reservId;
 	this.timeSlotId = timeSlotId;
 	this.userId = userId;
 	this.partySize = partySize;
+	this.allergies = allergies;
+	this.dietaryRequirements = dietaryRequirements;
 }
 
 // returns the reservation with the given id, or null if not found
@@ -17,7 +19,7 @@ async function getReservationById(reservId) {
 	if (!row)
 		return null;
 
-	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize);
+	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize, row.allergies, row.dietaryRequirements);
 }
 
 // returns an array of reservations for a specific userId. This method can also filter by timeSlotId, if specified
@@ -37,7 +39,9 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 		row.reservId,
 		row.timeSlotId,
 		row.userId,
-		row.partySize
+		row.partySize,
+		row.allergies,
+		row.dietaryRequirements
 	));
 }
 
