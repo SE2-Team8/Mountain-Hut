@@ -14,7 +14,8 @@ const NOW = "2027-03-09T12:30:00Z";
 const HOUR = 3600e3;
 
 let slot1, slot2;
-const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send({ timeSlotId, partySize });
+const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send(
+	{ timeSlotId: timeSlotId, partySize: partySize, allergies: false, dietaryRequirements: [] });
 
 beforeAll(initSchema);
 beforeEach(async () => {
@@ -45,9 +46,15 @@ describe("POST /api/reservations - authentication", () => {
 
 describe("POST /api/reservations - input validation", () => {
 	it.each([
-		["a timeSlotId that is not a number", { timeSlotId: "abc", partySize: 2 }],
-		["a partySize of 0", { timeSlotId: 1, partySize: 0 }],
-		["a partySize that is not a number", { timeSlotId: 1, partySize: "many" }],
+		["a timeSlotId that is not a number", { timeSlotId: "abc", partySize: 2, allergies: false, dietaryRequirements: [] }],
+		["a partySize of 0", { timeSlotId: 1, partySize: 0, allergies: false, dietaryRequirements: [] }],
+		["a partySize that is not a number", { timeSlotId: 1, partySize: "many", allergies: false, dietaryRequirements: [] }],
+		["allergies is not a bool", { timeSlotId: 1, partySize: "many", allergies: 1, dietaryRequirements: [] }],
+		["allergies is not a bool (2)", { timeSlotId: 1, partySize: "many", allergies: "not_a_bool", dietaryRequirements: [] }],
+		["dietary requirements not an array", { timeSlotId: 1, partySize: "many", allergies: false, dietaryRequirements: "not_an_array" }],
+		["dietary requirements not an array (2)", { timeSlotId: 1, partySize: "many", allergies: false, dietaryRequirements: {} }],
+		["dietary requirements not an array of strings", { timeSlotId: 1, partySize: "many", allergies: false, dietaryRequirements: [1, 2, 3] }],
+		["dietary requirements empty but allergies true", { timeSlotId: 1, partySize: "many", allergies: true, dietaryRequirements: [] }],
 	])("422 for %s", async (_label, body) => {
 		const agent = await loginAsRole("hiker");
 		const res = await agent.post("/api/reservations").send(body);
@@ -59,8 +66,11 @@ describe("POST /api/reservations - input validation", () => {
 
 	it.each([
 		["an empty body", {}],
-		["a missing partySize", { timeSlotId: 1 }],
-	])("400 for %s: the body must have exactly 2 fields", async (_label, body) => {
+		["missing timeSlotId", { partySize: 1, allergies: false, dietaryRequirements: [] }],
+		["missing partySize", { timeSlotId: 1, allergies: false, dietaryRequirements: [] }],
+		["missing allergies", { timeSlotId: 1, partySize: 1, dietaryRequirements: [] }],
+		["missing dietaryRequirements", { timeSlotId: 1, partySize: 1, allergies: false }],
+	])("400 for %s: the body must have exactly 4 fields", async (_label, body) => {
 		const agent = await loginAsRole("hiker");
 		const res = await agent.post("/api/reservations").send(body);
 
@@ -72,7 +82,8 @@ describe("POST /api/reservations - input validation", () => {
 	it("nobody can book on behalf of another user: a userId in the body is refused", async () => {
 		const agent = await loginAsRole("hiker");
 		const otherUser = await getUserId(USERS.hiker2.email);
-		const res = await agent.post("/api/reservations").send({ timeSlotId: slot1, partySize: 2, userId: otherUser });
+		const res = await agent.post("/api/reservations").send(
+			{ timeSlotId: slot1, partySize: 2, userId: otherUser, allergies: 1, dietaryRequirements: [] });
 
 		expect(res.status).toBe(400);
 		await expectNothingBooked();
@@ -96,7 +107,8 @@ describe("POST /api/reservations - success", () => {
 		expect(res.status).toBe(201);
 		expectEnvelope(res, true);
 		expect(await getReservations()).toEqual([
-			{ reservId: res.body.data, userId: await getUserId(USERS.hiker.email), timeSlotId: slot1, partySize: 4 },
+			{ reservId: res.body.data, userId: await getUserId(USERS.hiker.email), timeSlotId: slot1, 
+				partySize: 4, allergies: 0, dietaryRequirements: "[]",  },
 		]);
 	});
 
@@ -235,7 +247,7 @@ describe("POST /api/reservations - email notification", () => {
 		sendMail.mockClear();
 
 		// Prenotazione fallita (es. partySize 0)
-		const res = await agent.post("/api/reservations").send({ timeSlotId: slot1, partySize: 0 });
+		const res = await book(agent, slot1, 0);
 		expect(res.status).toBe(422);
 
 		expect(sendMail).not.toHaveBeenCalled();

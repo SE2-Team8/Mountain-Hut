@@ -42,16 +42,23 @@ afterEach(() => vi.useRealTimers());
 
 describe("reservationController.create - happy path", () => {
   it("books for the logged user, taking the id from the session, and answers 201", async () => {
-    await call({ timeSlotId: 1, partySize: 4 });
+    await call({ timeSlotId: 1, partySize: 4, allergies: false, dietaryRequirements: [] });
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 4);
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, false, []);
     expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
   });
 
   it("ignores a userId sent in the body (no booking on behalf of others)", async () => {
-    await call({ timeSlotId: 1, partySize: 2, userId: 999 });
+    await call({ timeSlotId: 1, partySize: 2, userId: 999, allergies: false, dietaryRequirements: [] });
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 2);
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, false, []);
+  });
+
+  it("passes allergies and dietaryRequirements", async () => {
+	const dietaryRequirements = ["No nuts", "I don't eat fish"];
+    await call({ timeSlotId: 1, partySize: 2, userId: 999, allergies: true, dietaryRequirements: dietaryRequirements });
+
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, true, dietaryRequirements);
   });
 });
 
@@ -119,7 +126,12 @@ describe("reservationController.create - errors", () => {
 });
 
 describe("reservationController.create - email notification", () => {
-  it("sends a confirmation email with the correct template and data upon successful reservation", async () => {
+  it.each([
+	[[true, ["No nuts please", "I can't eat eggs"]], ["Yes", "No nuts please, I can't eat eggs"]],
+	[[false, []], ["No", "None"]],
+  ]	
+  )("sends a confirmation email with the correct template and data upon successful reservation", 
+	async ([allergies, dietaryReq], [expectedAllergies, expectedDietaryReq]) => {
     
     getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
     createReservation.mockResolvedValue(42);  
@@ -128,7 +140,7 @@ describe("reservationController.create - email notification", () => {
       .mockReturnValueOnce("10-03-2027 10:00") // startDateTime
       .mockReturnValueOnce("10-03-2027 12:00"); // endDateTime
 
-    await call({ timeSlotId: 1, partySize: 4 });
+    await call({ timeSlotId: 1, partySize: 4, allergies: allergies, dietaryRequirements: dietaryReq });
     
     expect(sendTemplateEmail).toHaveBeenCalledWith({
       to: "hiker@example.com",
@@ -143,6 +155,8 @@ describe("reservationController.create - email notification", () => {
           userId: 7,
           timeSlotId: 1,
           partySize: 4,
+		  allergies: expectedAllergies,
+		  finalDietaryRequirements: expectedDietaryReq,
         },
         timeSlot: {
           timeSlotId: 1,
