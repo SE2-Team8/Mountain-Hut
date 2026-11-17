@@ -12,9 +12,11 @@ import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/utils/date";
 import { useNavigate } from "react-router";
 import usePageStore from "@/store/pageStore";
+import RequirementsSection from "@/components/ui/requirementsSection";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
+const EMPTY_ITEM = Object.freeze({ people: 1, name: "" });
 
 function toDateTimeLocal(date) {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -45,6 +47,49 @@ function isBookable(slot) {
   return Number(slot.freeSeats) > 0
     && new Date(slot.startDateTime).getTime() - Date.now() >= RESERVATION_CUTOFF_MS;
 }
+const requirementItemSchema = zod.object({
+  people: zod.union([zod.number(), zod.literal("")]),
+  name: zod.string(),
+});
+
+function getPartySizeError(items, partySize) {
+  const total = (items ?? []).reduce((sum, item) => sum + (Number.isInteger(item.people) ? item.people : 0), 0);
+
+  return partySize >= 1 && total > partySize
+    ? `The total number of people exceeds the party size `
+    : null;
+}
+
+function validateItems(enabled, items, listName, partySize, context) {
+  if (!enabled) return;
+
+  items.forEach((item, index) => {
+    if (!Number.isInteger(item.people) || item.people < 1) {
+      context.addIssue({
+        code: "custom",
+        path: [listName, index, "people"],
+        message: "Enter at least 1 person",
+      });
+    }
+
+    if (!item.name.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: [listName, index, "name"],
+        message: "This field is required",
+      });
+    }
+  });
+
+  const partySizeError = getPartySizeError(items, partySize);
+  if (partySizeError) {
+    context.addIssue({
+      code: "custom",
+      path: [listName],
+      message: partySizeError,
+    });
+  }
+}
 
 function PageReservations() {
   const [availability, setAvailability] = useState({ rangeKey: null, slots: [], error: false });
@@ -57,6 +102,10 @@ function PageReservations() {
     to: zod.string().min(1, "End date and time are required"),
     timeSlotId: zod.string().min(1, "Choose an available time slot").transform(Number),
     partySize: zod.coerce.number().int().min(1, "Enter at least 1 person"),
+    allergies: zod.boolean(),
+    allergyItems: zod.array(requirementItemSchema),
+    hasDietaryRequirements: zod.boolean(),
+    dietaryItems: zod.array(requirementItemSchema),
   }).superRefine((values, context) => {
     if (values.from && values.to && !isValidRange(values.from, values.to)) {
       context.addIssue({
@@ -65,6 +114,9 @@ function PageReservations() {
         message: "End date and time must be after the start",
       });
     }
+
+    validateItems(values.allergies, values.allergyItems, "allergyItems", values.partySize, context);
+    validateItems(values.hasDietaryRequirements, values.dietaryItems, "dietaryItems", values.partySize, context);
 
     const selectedSlot = slots.find((slot) => slot.timeSlotId === values.timeSlotId);
     if (!selectedSlot) {
@@ -108,10 +160,18 @@ function PageReservations() {
 	  to: toDateTimeLocal(reservData.endDateTime),
       timeSlotId: "",
       partySize: reservData.partySize,
+      allergies: false,
+      allergyItems: [{ ...EMPTY_ITEM }],
+      hasDietaryRequirements: false,
+      dietaryItems: [{ ...EMPTY_ITEM }],
 	} : {
       ...todayRange,
       timeSlotId: "",
       partySize: 1,
+      allergies: false,
+      allergyItems: [{ ...EMPTY_ITEM }],
+      hasDietaryRequirements: false,
+      dietaryItems: [{ ...EMPTY_ITEM }],
     };
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -124,6 +184,11 @@ function PageReservations() {
   const from = useWatch({ control, name: "from" });
   const to = useWatch({ control, name: "to" });
   const timeSlotId = useWatch({ control, name: "timeSlotId" });
+  const partySize = Number(useWatch({ control, name: "partySize" }));
+  const hasAllergies = useWatch({ control, name: "allergies" });
+  const allergyItems = useWatch({ control, name: "allergyItems" });
+  const hasDietaryRequirements = useWatch({ control, name: "hasDietaryRequirements" });
+  const dietaryItems = useWatch({ control, name: "dietaryItems" });
   const rangeKey = JSON.stringify([from, to]);
   const rangeIsValid = isValidRange(from, to);
   const rangeAvailability = availability.rangeKey === rangeKey ? availability : null;
@@ -187,9 +252,19 @@ function PageReservations() {
   }
 
   async function handleReservation(data) {
+        const dietaryRequirements = [
+      ...(data.allergies
+        ? data.allergyItems.map((item) => `${item.people} allergic to ${item.name.trim()}`)
+        : []),
+      ...(data.hasDietaryRequirements
+        ? data.dietaryItems.map((item) => `${item.people} ${item.name.trim()}`)
+        : []),
+    ];
     const response = await api.reservations.create({
       timeSlotId: data.timeSlotId,
       partySize: data.partySize,
+      allergies: data.allergies,
+      dietaryRequirements,
     });
 
     if (response?.success) {
@@ -354,7 +429,36 @@ function PageReservations() {
                   </Field>
                 )}
               />
-
+              <div className="grid gap-6 sm:grid-cols-2 sm:gap-0">
+                <div className="sm:pr-4">
+                  <RequirementsSection
+                    control={control}
+                    trigger={trigger}
+                    toggleName="allergies"
+                    listName="allergyItems"
+                    title="Allergies"
+                    placeholder="e.g. peanuts"
+                    idPrefix="allergy"
+                    emptyItem={EMPTY_ITEM}
+                    error={hasAllergies ? getPartySizeError(allergyItems, partySize) : null}
+                    disabled={formState.isSubmitting}
+                  />
+                </div>
+                <div className="sm:border-l sm:pl-4">
+                  <RequirementsSection
+                    control={control}
+                    trigger={trigger}
+                    toggleName="hasDietaryRequirements"
+                    listName="dietaryItems"
+                    title="Dietary requirements"
+                    placeholder="e.g. vegetarian"
+                    idPrefix="dietary"
+                    emptyItem={EMPTY_ITEM}
+                    error={hasDietaryRequirements ? getPartySizeError(dietaryItems, partySize) : null}
+                    disabled={formState.isSubmitting}
+                  />
+                </div>
+              </div>
               <Button
                 type="submit"
                 size="lg"
