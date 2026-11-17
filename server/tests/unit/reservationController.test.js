@@ -92,14 +92,14 @@ describe("reservationController.create - input validation", () => {
 describe("reservationController.create - 2 hours rule", () => {
   it("accepts a reservation made exactly 2 hours before the slot", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: []});
 
     expect(createReservation).toHaveBeenCalled();
   });
 
   it("rejects a reservation made 1 minute too late", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR - 60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
 
     expect(responseError.mock.calls[0][3]).toBe(400);
     expect(createReservation).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe("reservationController.create - 2 hours rule", () => {
 
   it("rejects a slot that has already started", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(-60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
 
     expect(responseError).toHaveBeenCalled();
     expect(createReservation).not.toHaveBeenCalled();
@@ -117,7 +117,7 @@ describe("reservationController.create - 2 hours rule", () => {
 describe("reservationController.create - one reservation per time slot", () => {
   it("answers 409 when the hiker already has a reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([{ reservId: 1 }]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
 
     expect(getReservationsByUser).toHaveBeenCalledWith(7, 1);
     expect(responseError.mock.calls[0][3]).toBe(409);
@@ -126,7 +126,7 @@ describe("reservationController.create - one reservation per time slot", () => {
 
   it("books when the hiker has no reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
 
     expect(createReservation).toHaveBeenCalled();
   });
@@ -136,7 +136,7 @@ describe("reservationController.create - errors", () => {
   it("lets repository errors reach the error handler", async () => {
     createReservation.mockRejectedValue(new Error("Not enough free seats"));
 
-    await expect(callControllerCreate({ timeSlotId: 1, partySize: 50 })).rejects.toThrow("Not enough free seats");
+    await expect(callControllerCreate({ timeSlotId: 1, partySize: 50, allergies: false, dietaryRequirements: [] })).rejects.toThrow("Not enough free seats");
     expect(responseSuccess).not.toHaveBeenCalled();
   });
 });
@@ -191,7 +191,7 @@ describe("reservationController.create - email notification", () => {
     
     sendTemplateEmail.mockRejectedValue(new Error("SMTP server down"));
 
-    await expect(callControllerCreate({ timeSlotId: 1, partySize: 4 })).rejects.toThrow("SMTP server down");
+    await expect(callControllerCreate({ timeSlotId: 1, partySize: 4, allergies: false, dietaryRequirements: [] })).rejects.toThrow("SMTP server down");
     
     expect(responseSuccess).not.toHaveBeenCalled();
   });
