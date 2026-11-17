@@ -10,7 +10,7 @@ const reservationController = {
 		const userId = req.user.userId;
 
 		if (allergies == true && dietaryRequirements.length == 0) return responseError(res, null, `If there are allergies, they must be specified`, 422);
-		const finalDietaryRequirements = allergies == true ? dietaryRequirements : [];
+		//const finalDietaryRequirements = allergies == true ? dietaryRequirements : [];
 
 		const timeSlot = await getTimeSlotById(timeSlotId);
 		if (!timeSlot) return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
@@ -26,7 +26,7 @@ const reservationController = {
 
 		if (timeSlot.freeSeats < partySize) return responseError(res, null, "Not enough free seats", 400);
 
-		const reservId = await createReservation(userId, timeSlotId, partySize, allergies, finalDietaryRequirements);
+		const reservId = await createReservation(userId, timeSlotId, partySize, allergies, dietaryRequirements);
 
 		await sendTemplateEmail({
 			to: req.user.email,
@@ -42,7 +42,7 @@ const reservationController = {
 					timeSlotId,
 					partySize,
 					allergies: allergies == true? "Yes" : "No",
-					finalDietaryRequirements: finalDietaryRequirements.length > 0 ? finalDietaryRequirements.join(", ") : "None"
+					finalDietaryRequirements: dietaryRequirements.length > 0 ? dietaryRequirements.join(", ") : "None"
 				},
 				timeSlot: {
 					timeSlotId: timeSlot.timeSlotId,

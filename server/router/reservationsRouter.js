@@ -14,7 +14,7 @@ router.post('/', isAuthenticated,
         body('partySize').notEmpty().withMessage('partySize is required').isInt({ min: 1}).withMessage('partySize must be an integer grater than 0'),
         body('allergies').notEmpty().withMessage('allergies is required').isBoolean().withMessage('allergies must be a boolean value'),
         body('dietaryRequirements').exists().withMessage('dietaryRequirements is required').isArray().withMessage('dietaryRequirements must be an array'),
-        body('dietaryRequirements.*').isString().withMessage('Each dietary requirement must be a string')
+        body('dietaryRequirements.*').isString().withMessage('Each dietary requirement must be a string').trim().notEmpty().withMessage('Each dietary requirement cannot be empty or whitespace only')
     ]),
     wrapController(reservationController.create));
 
