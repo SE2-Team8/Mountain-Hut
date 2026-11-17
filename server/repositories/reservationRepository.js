@@ -5,7 +5,6 @@ function Reservation(reservId, timeSlotId, userId, partySize, allergies, dietary
 	this.timeSlotId = timeSlotId;
 	this.userId = userId;
 	this.partySize = partySize;
-	this.allergies = allergies;
 	this.dietaryRequirements = dietaryRequirements;
 }
 
@@ -19,7 +18,7 @@ async function getReservationById(reservId) {
 	if (!row)
 		return null;
 
-	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize, row.allergies, row.dietaryRequirements);
+	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize, row.dietaryRequirements);
 }
 
 // returns an array of reservations for a specific userId. This method can also filter by timeSlotId, if specified
@@ -40,7 +39,6 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 		row.timeSlotId,
 		row.userId,
 		row.partySize,
-		row.allergies,
 		row.dietaryRequirements
 	));
 }
@@ -114,7 +112,7 @@ async function getAvailableTables(timeSlotId, partySize) {
 // creates a reservation and returns the created reservation id.
 // the only enforced business rules inside this method are the party size < available seats
 // (other rules such as reservation time or author of the reservation must be checked somewhere else)
-async function createReservation(userId, timeSlotId, partySize, allergies, dietaryRequirements) {
+async function createReservation(userId, timeSlotId, partySize, dietaryRequirements) {
 	return await withTransaction(async () => {
 		// get the available tables for the given slot and party size
 		const reservTables = await getAvailableTables(timeSlotId, partySize);
@@ -137,8 +135,8 @@ async function createReservation(userId, timeSlotId, partySize, allergies, dieta
 		// create actual reservation
 		const queryRes = await queryRun(
 			`INSERT INTO reservations
-			(userId, timeSlotId, partySize, allergies, dietaryRequirements) VALUES (?, ?, ?, ?, ?)`, 
-			[userId, timeSlotId, partySize, allergies == true ? 1 : 0, JSON.stringify(dietaryRequirements)]
+			(userId, timeSlotId, partySize, dietaryRequirements) VALUES (?, ?, ?, ?)`, 
+			[userId, timeSlotId, partySize, JSON.stringify(dietaryRequirements)]
 		);
 		const reservId = queryRes.lastID;
 		

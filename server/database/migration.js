@@ -32,7 +32,6 @@ db.serialize(() => {
     userId INTEGER NOT NULL,
 	timeSlotId INTEGER NOT NULL,
 	partySize INTEGER NOT NULL,
-  allergies INTEGER NOT NULL,
   dietaryRequirements TEXT NOT NULL,
 	FOREIGN KEY (userId) REFERENCES users(userId),
 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)

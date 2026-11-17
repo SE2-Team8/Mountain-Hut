@@ -6,11 +6,8 @@ import { responseError, responseSuccess } from "../utils/response.js";
 
 const reservationController = {
 	create: async (req, res) => {
-		const { timeSlotId, partySize, allergies, dietaryRequirements } = req.body;
+		const { timeSlotId, partySize, dietaryRequirements } = req.body;
 		const userId = req.user.userId;
-
-		if (allergies == true && dietaryRequirements.length == 0) return responseError(res, null, `If there are allergies, they must be specified`, 422);
-		const finalDietaryRequirements = allergies == true ? dietaryRequirements : [];
 
 		const timeSlot = await getTimeSlotById(timeSlotId);
 		if (!timeSlot) return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
@@ -26,7 +23,14 @@ const reservationController = {
 
 		if (timeSlot.freeSeats < partySize) return responseError(res, null, "Not enough free seats", 400);
 
-		const reservId = await createReservation(userId, timeSlotId, partySize, allergies, finalDietaryRequirements);
+		const reservId = await createReservation(userId, timeSlotId, partySize, dietaryRequirements);
+
+		const hasAnyAllergy = dietaryRequirements.some(req => req.allergies === true);
+		const formattedRequirements = dietaryRequirements.length > 0
+			? dietaryRequirements.map(req => 
+				`${req.description} ${req.allergies ? '(Allergy)' : '(Diet)'}`
+			).join(", ")
+			: "None";
 
 		await sendTemplateEmail({
 			to: req.user.email,
@@ -41,8 +45,8 @@ const reservationController = {
 					userId,
 					timeSlotId,
 					partySize,
-					allergies: allergies == true? "Yes" : "No",
-					finalDietaryRequirements: finalDietaryRequirements.length > 0 ? finalDietaryRequirements.join(", ") : "None"
+					allergies: hasAnyAllergy == true? "Yes" : "No",
+					dietaryRequirements: formattedRequirements
 				},
 				timeSlot: {
 					timeSlotId: timeSlot.timeSlotId,
