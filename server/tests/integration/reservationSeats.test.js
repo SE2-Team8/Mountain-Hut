@@ -14,7 +14,7 @@ const [S1, , , S4] = SLOTS;
 
 let slot1, slot4;
 const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send(
-	{ timeSlotId: timeSlotId, partySize: partySize, allergies: false, dietaryRequirements: [] });
+	{ timeSlotId: timeSlotId, partySize: partySize, dietaryRequirements: [] });
 
 async function bookAndGetAssignments(role, timeSlotId, partySize) {
 	const res = await book(await loginAsRole(role), timeSlotId, partySize);
