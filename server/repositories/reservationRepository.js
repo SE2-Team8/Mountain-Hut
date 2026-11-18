@@ -13,9 +13,8 @@ function Reservation(reservId, timeSlotId, userId, partySize, dietaryRequirement
 }
 
 // returns the reservation with the given id, or null if not found:
-// { reservId, userId, timeSlotId, partySize, dietaryRequirements, 
-// 		timeSlotId: { timeSlotId, startDateTime, endDateTime },
-// 		tablesAssignements: [{ tableId, tableNumber, occupiedSeats }] (sorted by table number) }
+// { reservId, userId, timeSlotId, partySize, dietaryRequirements, startDateTime, endDateTime,
+// 		tablesAssignments: [{ tableId, tableNumber, occupiedSeats }] (sorted by table number) }
 async function getReservationById(reservId) {
 	const row = await queryGet(
 		`SELECT reservations.*, timeSlots.startDateTime, timeSlots.endDateTime 
@@ -31,7 +30,7 @@ async function getReservationById(reservId) {
 		FROM tableAssignments JOIN tables ON tableAssignments.tableId = tables.tableId
 		WHERE tableAssignments.reservId = ?
 		ORDER BY tables.tableNumber ASC`, [reservId]
-	)
+	);
 
 	return new Reservation(
 		row.reservId,
@@ -179,11 +178,76 @@ async function createReservation(userId, timeSlotId, partySize, dietaryRequireme
 
 }
 
+// updates the timeslot, party size and dietary requirements of an existing reservation and returns the reservation id.
+// the new values must always be passed (the caller keeps the old value for what does not change)
+// - if the timeSlot and the party size are unchanged, only the dietary requirements are updated and the tables stays as they are
+// - otherwise the change is treated as a new booking: the seats of the reservation are released and the tables are selected again with getAvailableTables (in the new timeSlot, if it changed)
+// - if there are not enough seats the function throws and the reservation stays exactly as it was
+// the other business rules must be checked in the controller
+async function updateReservation(reservId, timeSlotId, partySize, dietaryRequirements) {
+	return await withTransaction(async () => {
+		const current = await queryGet(
+			`SELECT * FROM reservations
+			WHERE reservId = ?`, [reservId]
+		);
 
-async function updateReservation() {
+		if (!current)
+			throw new Error("Reservation not found");
 
+		const seatsChanged = current.timeSlotId != timeSlotId || current.partySize != partySize;
+
+		if (seatsChanged) {
+			// release the seats currently taken by the reservation
+			const oldAssignments = await queryAll(
+				`SELECT tableId, occupiedSeats 
+				FROM tableAssignments
+				WHERE reservId = ?`, [reservId]
+			);
+
+			for (const { tableId, occupiedSeats } of oldAssignments) {
+				await queryRun(
+					`UPDATE tables
+					SET freeSeats = freeSeats + ?
+					WHERE tableId = ?`, [occupiedSeats, tableId]
+				);
+			}
+
+			await queryRun(
+				`DELETE FROM tableAssignments
+				WHERE reservId = ?`, [reservId]
+			);
+
+			// select the tables again, as for a new booking (the previously released seats are available again)
+			const reservTables = await getAvailableTables(timeSlotId, partySize);
+
+			if (reservTables.length == 0)
+				throw new Error("Not enough free seats to change the reservation");
+
+			for (const { tableId, seatsToTake } of reservTables) {
+				await queryRun(
+					`UPDATE tables
+					SET freeSeats = freeSeats - ?
+					WHERE tableId = ?`, [seatsToTake, tableId]
+				);
+
+				await queryRun(
+					`INSERT INTO tableAssignments (tableId, reservId, occupiedSeats)
+					VALUES (?, ?, ?)`, [tableId, reservId, seatsToTake]
+				);
+			}
+		}
+
+		await queryRun(
+			`UPDATE reservations
+			SET timeSlotId = ?, partySize = ?, dietaryRequirements = ?
+			WHERE reservId = ?`,
+			[timeSlotId, partySize, JSON.stringify(dietaryRequirements), reservId]
+		);
+
+		return reservId;
+	});
 }
 
 // TODO (later): deleteReservation
 
-export { Reservation, getReservationById, getReservationsByUser, createReservation, getAvailableTables };
+export { Reservation, getReservationById, getReservationsByUser, createReservation, getAvailableTables, updateReservation };
