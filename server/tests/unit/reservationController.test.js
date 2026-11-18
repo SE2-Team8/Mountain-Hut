@@ -42,64 +42,51 @@ afterEach(() => vi.useRealTimers());
 
 describe("reservationController.create - happy path", () => {
   it("books for the logged user, taking the id from the session, and answers 201", async () => {
-    await callControllerCreate({ timeSlotId: 1, partySize: 4, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: [] });
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, false, []);
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, []);
+    expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+  });
+
+  it("passes dietary requirements", async () => {
+	const dietaryReq = [{allergies: true, description: "No nuts"}];
+    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: dietaryReq });
+
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, dietaryReq);
     expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
   });
 
   it("ignores a userId sent in the body (no booking on behalf of others)", async () => {
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, userId: 999, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, userId: 999, dietaryRequirements: [] });
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, false, []);
+    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, []);
   });
 
-  it("passes allergies and dietaryRequirements", async () => {
-	const dietaryRequirements = ["No nuts", "I don't eat fish"];
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, userId: 999, allergies: true, dietaryRequirements: dietaryRequirements });
-
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, true, dietaryRequirements);
-  });
-
-  it("passes no allergies but still passes dietaryRequirements", async () => {
-	const dietaryRequirements = ["One vegetarian", "One carnivore"];
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, userId: 999, allergies: false, dietaryRequirements: dietaryRequirements });
-
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, false, dietaryRequirements);
-  });
 });
 
 describe("reservationController.create - input validation", () => {
   it("answers 404 for a time slot that does not exist (instead of crashing)", async () => {
     getTimeSlotById.mockResolvedValue(null);
 
-    await callControllerCreate({ timeSlotId: 99, partySize: 2 });
+    await callControllerCreate({ timeSlotId: 99, partySize: 2, dietaryRequirements: [] });
 
     expect(responseError.mock.calls[0][3]).toBe(404);
     expect(createReservation).not.toHaveBeenCalled();
   });
 
-  it("answers 422 when allergies is set but no dietary requirements are provided", async () => {
-    getTimeSlotById.mockResolvedValue(null);
-
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: true, dietaryRequirements: [] });
-
-    expect(responseError.mock.calls[0][3]).toBe(422);
-    expect(createReservation).not.toHaveBeenCalled();
-  });
 });
 
 describe("reservationController.create - 2 hours rule", () => {
   it("accepts a reservation made exactly 2 hours before the slot", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: []});
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: []});
 
     expect(createReservation).toHaveBeenCalled();
   });
 
   it("rejects a reservation made 1 minute too late", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR - 60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
 
     expect(responseError.mock.calls[0][3]).toBe(400);
     expect(createReservation).not.toHaveBeenCalled();
@@ -107,7 +94,7 @@ describe("reservationController.create - 2 hours rule", () => {
 
   it("rejects a slot that has already started", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(-60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
 
     expect(responseError).toHaveBeenCalled();
     expect(createReservation).not.toHaveBeenCalled();
@@ -117,7 +104,7 @@ describe("reservationController.create - 2 hours rule", () => {
 describe("reservationController.create - one reservation per time slot", () => {
   it("answers 409 when the hiker already has a reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([{ reservId: 1 }]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
 
     expect(getReservationsByUser).toHaveBeenCalledWith(7, 1);
     expect(responseError.mock.calls[0][3]).toBe(409);
@@ -126,7 +113,7 @@ describe("reservationController.create - one reservation per time slot", () => {
 
   it("books when the hiker has no reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, allergies: false, dietaryRequirements: [] });
+    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
 
     expect(createReservation).toHaveBeenCalled();
   });
@@ -136,19 +123,20 @@ describe("reservationController.create - errors", () => {
   it("lets repository errors reach the error handler", async () => {
     createReservation.mockRejectedValue(new Error("Not enough free seats"));
 
-    await expect(callControllerCreate({ timeSlotId: 1, partySize: 50, allergies: false, dietaryRequirements: [] })).rejects.toThrow("Not enough free seats");
+    await expect(callControllerCreate({ timeSlotId: 1, partySize: 500, dietaryRequirements: [] })).rejects.toThrow("Not enough free seats");
     expect(responseSuccess).not.toHaveBeenCalled();
   });
 });
 
 describe("reservationController.create - email notification", () => {
   it.each([
-	[[true, ["No nuts please", "I can't eat eggs"]], ["Yes", "No nuts please, I can't eat eggs"]],
-	[[false, ["One vegetarian", "One carnivore"]], ["No", "One vegetarian, One carnivore"]],
-	[[false, []], ["No", "None"]],
+	[[{allergies: true, description: "No nuts please" }], ["Yes", "No nuts please (Allergy)"]],
+	[[{allergies: true, description: "No nuts please" }, { allergies: false, description: "I can't eat eggs"}], ["Yes", "No nuts please (Allergy), I can't eat eggs (Diet)"]],
+	[[{allergies: false, description: "Carnivore" }, { allergies: false, description: "Vegetarian"}], ["No", "Carnivore (Diet), Vegetarian (Diet)"]],
+	[[], ["No", "None"]],
   ]	
   )("sends a confirmation email with the correct template and data upon successful reservation", 
-	async ([allergies, dietaryReq], [expectedAllergies, expectedDietaryReq]) => {
+	async (dietaryReq, [expectedAllergies, expectedFormattedDietaryReq]) => {
     
     getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
     createReservation.mockResolvedValue(42);  
@@ -157,7 +145,7 @@ describe("reservationController.create - email notification", () => {
       .mockReturnValueOnce("10-03-2027 10:00") // startDateTime
       .mockReturnValueOnce("10-03-2027 12:00"); // endDateTime
 
-    await callControllerCreate({ timeSlotId: 1, partySize: 4, allergies: allergies, dietaryRequirements: dietaryReq });
+    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: dietaryReq });
     
     expect(sendTemplateEmail).toHaveBeenCalledWith({
       to: "hiker@example.com",
@@ -173,7 +161,7 @@ describe("reservationController.create - email notification", () => {
           timeSlotId: 1,
           partySize: 4,
 		  allergies: expectedAllergies,
-		  finalDietaryRequirements: expectedDietaryReq,
+		  dietaryRequirements: expectedFormattedDietaryReq,
         },
         timeSlot: {
           timeSlotId: 1,

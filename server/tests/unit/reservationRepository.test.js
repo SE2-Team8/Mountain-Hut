@@ -119,13 +119,12 @@ describe("createReservation - split over more tables", () => {
 
 describe("createReservation - results and persistence", () => {
 
-	const dietaryNotes = ["No nuts", "I can't eaty fish"];
+	const dietaryNotes = [{allergies: true, description: "No nuts"}, {allergies: false, description: "Vegan"}];
 	it.each(
 	[
-		[[USER_ID, TIME_SLOT_ID, 3, false, []], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify([])]],
-		[[USER_ID, TIME_SLOT_ID, 3, true, []], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify([])]],
-		[[USER_ID, TIME_SLOT_ID, 3, true, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 1, JSON.stringify(dietaryNotes)]],
-		[[USER_ID, TIME_SLOT_ID, 3, false, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, 0, JSON.stringify(dietaryNotes)]],
+		[[USER_ID, TIME_SLOT_ID, 3, []], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([])]],
+		[[USER_ID, TIME_SLOT_ID, 3, []], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([])]],
+		[[USER_ID, TIME_SLOT_ID, 3, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify(dietaryNotes)]],
 	]
   )("inserts the reservation and returns its id", async (args, expected) => {
     givenFreeTables(table(1, 4));
