@@ -154,7 +154,7 @@ function PageInspectReservation() {
 	}, [reservation, form]);
 
 	function handleSelectSlot(slot, field) {
-		field.onChange(String(slot.timeSlotId));
+		field.onChange(Number(slot.timeSlotId));
 		// trigger("partySize");
 	}
 
