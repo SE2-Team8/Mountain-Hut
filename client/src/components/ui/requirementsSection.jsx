@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import * as zod from 'zod';
 
-function RequirementsSection({ control, emptyItem, errors, addDisabled, disabled }) {
+const EMPTY_ITEM = Object.freeze({ allergies: false, people: 1, description: "" });
+
+function RequirementsSection({ control, errors, addDisabled, disabled }) {
   const { fields, append, remove } = useFieldArray({ control, name: "dietaryRequirements" });
 
   return (
@@ -18,7 +21,7 @@ function RequirementsSection({ control, emptyItem, errors, addDisabled, disabled
           size="icon"
           aria-label="Add dietary requirement"
           disabled={addDisabled || disabled}
-          onClick={() => append({ ...emptyItem })}
+          onClick={() => append({ ...EMPTY_ITEM })}
         >
           <Plus />
         </Button>
@@ -106,4 +109,32 @@ function RequirementsSection({ control, emptyItem, errors, addDisabled, disabled
   );
 }
 
-export default RequirementsSection;
+const requirementItemSchema = zod.object({
+  allergies: zod.boolean(),
+  people: zod.union([zod.number(), zod.literal("")]),
+  description: zod.string(),
+});
+
+function splitFirstSpace(s) {
+  const i = s.indexOf(" ");
+  return i === -1 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)];
+}
+
+const requirementObjToItem = (reqObj) => {
+	const {allergies, description} = reqObj;
+	const [people, descr] = splitFirstSpace(description); 
+	return {
+		allergies: allergies,
+		people: Number(people),
+		description: descr,
+	};
+}
+
+const requirementItemToObj = (reqItem) => {
+	return {
+        allergies: reqItem.allergies,
+        description: `${reqItem.people} ${reqItem.description.trim()}`,
+	};
+}
+
+export { RequirementsSection, requirementItemSchema, requirementObjToItem, requirementItemToObj };

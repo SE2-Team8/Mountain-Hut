@@ -12,11 +12,10 @@ import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/utils/date";
 import { useNavigate } from "react-router";
 import usePageStore from "@/store/pageStore";
-import RequirementsSection from "@/components/ui/requirementsSection";
+import { RequirementsSection, requirementItemSchema, requirementItemToObj } from "@/components/ui/requirementsSection";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
-const EMPTY_ITEM = Object.freeze({ allergies: false, people: 1, description: "" });
 
 function toDateTimeLocal(date) {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -47,12 +46,6 @@ function isBookable(slot) {
   return Number(slot.freeSeats) > 0
     && new Date(slot.startDateTime).getTime() - Date.now() >= RESERVATION_CUTOFF_MS;
 }
-
-const requirementItemSchema = zod.object({
-  allergies: zod.boolean(),
-  people: zod.union([zod.number(), zod.literal("")]),
-  description: zod.string(),
-});
 
 function getPartySizeErrors(items, partySize) {
   if (!(partySize >= 1)) return [];
@@ -245,10 +238,7 @@ function PageReservations() {
     const response = await api.reservations.create({
       timeSlotId: data.timeSlotId,
       partySize: data.partySize,
-      dietaryRequirements: data.dietaryRequirements.map((item) => ({
-        allergies: item.allergies,
-        description: `${item.people} ${item.description.trim()}`,
-      })),
+      dietaryRequirements: data.dietaryRequirements.map((item) => requirementItemToObj(item)),
     });
 
     if (response?.success) {
@@ -416,7 +406,6 @@ function PageReservations() {
 
               <RequirementsSection
                 control={control}
-                emptyItem={EMPTY_ITEM}
                 errors={getPartySizeErrors(dietaryRequirements, partySize)}
                 addDisabled={!onlyOne && !selectedSlot}
                 disabled={formState.isSubmitting}
