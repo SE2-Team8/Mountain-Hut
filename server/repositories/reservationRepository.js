@@ -1,24 +1,48 @@
+import { stringISOToDate } from "../utils/dateTimeFormatter.js";
 import { queryAll, queryGet, queryRun, withTransaction } from "../utils/query.js";
 
-function Reservation(reservId, timeSlotId, userId, partySize, allergies, dietaryRequirements) {
+function Reservation(reservId, timeSlotId, userId, partySize, dietaryRequirements, startDateTime = null, endDateTime = null, tableAssignments = null) {
 	this.reservId = reservId;
 	this.timeSlotId = timeSlotId;
 	this.userId = userId;
 	this.partySize = partySize;
 	this.dietaryRequirements = dietaryRequirements;
+	if (startDateTime) this.startDateTime = startDateTime;
+	if (endDateTime) this.endDateTime = endDateTime;
+	if (tableAssignments) this.tableAssignments = tableAssignments;	// [{ tableId, tableNumber, occupiedSeats }]
 }
 
-// returns the reservation with the given id, or null if not found
+// returns the reservation with the given id, or null if not found:
+// { reservId, userId, timeSlotId, partySize, dietaryRequirements, 
+// 		timeSlotId: { timeSlotId, startDateTime, endDateTime },
+// 		tablesAssignements: [{ tableId, tableNumber, occupiedSeats }] (sorted by table number) }
 async function getReservationById(reservId) {
 	const row = await queryGet(
-		`SELECT * FROM reservations
-		WHERE reservId = ?`, [reservId]
+		`SELECT reservations.*, timeSlots.startDateTime, timeSlots.endDateTime 
+		FROM reservations JOIN timeSlots ON reservations.timeSlotId = timeSlots.timeSlotId
+		WHERE reservations.reservId = ?`, [reservId]
 	);
 
 	if (!row)
 		return null;
 
-	return new Reservation(row.reservId, row.timeSlotId, row.userId, row.partySize, row.dietaryRequirements);
+	const assignments = await queryAll(
+		`SELECT tableAssignments.tableId, tables.tableNumber, tableAssignments.occupiedSeats
+		FROM tableAssignments JOIN tables ON tableAssignments.tableId = tables.tableId
+		WHERE tableAssignments.reservId = ?
+		ORDER BY tables.tableNumber ASC`, [reservId]
+	)
+
+	return new Reservation(
+		row.reservId,
+		row.timeSlotId,
+		row.userId,
+		row.partySize,
+		JSON.parse(row.dietaryRequirements),
+		stringISOToDate(row.startDateTime),
+		stringISOToDate(row.endDateTime),
+		assignments,
+	);
 }
 
 // returns an array of reservations for a specific userId. This method can also filter by timeSlotId, if specified
@@ -39,7 +63,7 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 		row.timeSlotId,
 		row.userId,
 		row.partySize,
-		row.dietaryRequirements
+		JSON.parse(row.dietaryRequirements)
 	));
 }
 
@@ -155,6 +179,11 @@ async function createReservation(userId, timeSlotId, partySize, dietaryRequireme
 
 }
 
-// TODO (later): deleteReservation, updateReservation
+
+async function updateReservation() {
+
+}
+
+// TODO (later): deleteReservation
 
 export { Reservation, getReservationById, getReservationsByUser, createReservation, getAvailableTables };
