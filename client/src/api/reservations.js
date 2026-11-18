@@ -5,6 +5,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const reservationsApi = {
     create: (data) => httpClient.post('/reservations', data),
+	// get: (reservId) => httpClient.get(`/reservations/${reservId}`), // TODO: ensure this endpoint is consistent with server
 	get: async (reservId) => { // TEMP RESPONSE
 		console.log("called API get reservation");
 		await delay(1000); // temp delay
@@ -30,6 +31,7 @@ const reservationsApi = {
 		}
 	},
 
+	// update: (reservId, body) => httpClient.put(`/reservations/${reservId}`, body), // TODO: ensure this endpoint is consistent with server
 	update: async (reservId, newReservation) => { // TEMP
 		console.log("called API update reservation");
 		await delay(1000); // temp delay
@@ -38,7 +40,6 @@ const reservationsApi = {
 			data: {}
 		}
 	},
-	// update: (reservId, body) => httpClient.put(`/reservations/${reservId}`, body), // TODO: ensure this endpoint is consistent with server
 };
 
 export default reservationsApi;

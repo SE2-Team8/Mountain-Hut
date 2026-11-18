@@ -86,11 +86,15 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 
   const [availableTimeslots, setAvailableTimeSlots] = useState(null);
 
-  // When the date changes, clear the previously chosen time so the user
-  // can't keep a stale time from another day.
+
   useEffect(() => {
-    setValue("timeSlotId", 0, { shouldValidate: false });
-  }, [selectedDate, setValue]);
+  if (!availableTimeslots) return;
+  const current = form.getValues("timeSlotId");
+  const stillValid = availableTimeslots.some(
+    (s) => Number(s.timeSlotId) === Number(current)
+  );
+  if (!stillValid) setValue("timeSlotId", 0, { shouldValidate: false });
+}, [availableTimeslots, setValue, form]);
 
   // When the date changes, fetch the timeslots for that date
   useEffect(() => {
@@ -142,6 +146,9 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 
 	const response = await api.reservations.update(reservation.reservId, newReservation);
 	
+	if (!response.success) {
+		// TODO: handle error when update goes wrong?
+	}
     // toast.success(`Submit called with ${JSON.stringify(values)}`);
     // toast.success(`Reservation obj: ${JSON.stringify(newReservation)}`);
 	onSuccess?.();
@@ -228,7 +235,9 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {availableTimeslots.map((slot) => {
-                    const canBeSelected = partySize <= Number(slot.freeSeats);
+					const isOriginalSlot = slot.timeSlotId == reservation.timeSlotId;
+					const toRemoveSeats = isOriginalSlot? reservation.partySize : 0;
+                    const canBeSelected = partySize <= Number(slot.freeSeats) + toRemoveSeats;
                     const isSelected = Number(field.value) === slot.timeSlotId;
                     return (
                       <Button
@@ -421,6 +430,9 @@ function PageInspectReservation() {
 	if (response.success) {
 		setReservation(response.data);
 		setReservationLoaded(true);
+	}
+	else {
+		// TODO: handle error when fetching non existent-reservation?
 	}
 	
 	}, [reservation_id]);
