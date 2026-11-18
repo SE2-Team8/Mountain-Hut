@@ -53,7 +53,11 @@ describe("timeSlotController.getByStartAndPartySize", () => {
 
 		expect(getTimeSlotByStart).toHaveBeenCalledWith(new Date(start));
 		expect(checkSlotAvailability).toHaveBeenCalledWith(slot.timeSlotId, 15);
-		expect(responseSuccess).toHaveBeenCalledWith(res, configuration, "Configuration Retrived");
+		expect(responseSuccess).toHaveBeenCalledWith(
+			res,
+			{ timeSlotId: slot.timeSlotId, ...configuration },
+			"Configuration Retrived"
+		);
 		expect(responseError).not.toHaveBeenCalled();
 	});
 

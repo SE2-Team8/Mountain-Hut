@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, Clock3, Users } from "lucide-react";
+import { Clock3, Users } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import * as zod from "zod";
 import { toast } from "sonner";
@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { formatDateTime } from "@/utils/date";
-import { useNavigate } from "react-router";
-import usePageStore from "@/store/pageStore";
+import { useNavigate, useSearchParams } from "react-router";
 import { RequirementsSection, requirementItemSchema, requirementItemToObj } from "@/components/ui/requirementsSection";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
@@ -32,6 +31,34 @@ function getTodayRange() {
   return {
     from: toDateTimeLocal(start),
     to: toDateTimeLocal(end),
+  };
+}
+
+function getReservationPrefill(searchParams, todayRange) {
+  const startParam = searchParams.get("start");
+  const parsedStart = startParam ? new Date(startParam) : null;
+  const requestedStart = parsedStart && Number.isFinite(parsedStart.getTime())
+    ? parsedStart
+    : null;
+  const requestedPartySize = Number(searchParams.get("partySize"));
+  const partySize = Number.isInteger(requestedPartySize) && requestedPartySize >= 1
+    ? requestedPartySize
+    : 1;
+  const requestedTimeSlotIdValue = Number(searchParams.get("timeSlotId"));
+  const requestedTimeSlotId = Number.isInteger(requestedTimeSlotIdValue) && requestedTimeSlotIdValue >= 1
+    ? requestedTimeSlotIdValue
+    : null;
+  const localStart = requestedStart ? toDateTimeLocal(requestedStart) : null;
+
+  return {
+    requestedTimeSlotId,
+    formValues: {
+      from: localStart ?? todayRange.from,
+      to: localStart ?? todayRange.to,
+      timeSlotId: "",
+      partySize,
+      dietaryRequirements: [],
+    },
   };
 }
 
@@ -68,6 +95,8 @@ function PageReservations() {
   const [loading, setLoading] = useState(true);
   const todayRange = getTodayRange();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { requestedTimeSlotId, formValues: formInitialValues } = getReservationPrefill(searchParams, todayRange);
 
   const formSchema = zod.object({
     from: zod.string().min(1, "Start date and time are required"),
@@ -145,20 +174,6 @@ function PageReservations() {
     }
   });
 
-  const pageStore = usePageStore.getState();
-  const reservData = pageStore.getPageData("/reservations");
-  const formInitialValues = reservData? {
-	  from: toDateTimeLocal(reservData.startDateTime),
-	  to: toDateTimeLocal(reservData.endDateTime),
-      timeSlotId: "",
-      partySize: reservData.partySize,
-      dietaryRequirements: [],
-	} : {
-      ...todayRange,
-      timeSlotId: "",
-      partySize: 1,
-      dietaryRequirements: [],
-    };
   const form = useForm({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -223,7 +238,17 @@ function PageReservations() {
         active = false;
       };
     }
-  }, [fetchAvailability, from, rangeIsValid, setValue, to]);
+  }, [fetchAvailability, formInitialValues.partySize, from, rangeIsValid, setValue, to]);
+
+  useEffect(() => {
+    if (loading || !requestedTimeSlotId || timeSlotId) return;
+
+    const requestedSlot = slots.find((slot) => slot.timeSlotId === requestedTimeSlotId);
+
+    if (requestedSlot) {
+      setValue("timeSlotId", String(requestedSlot.timeSlotId), { shouldValidate: true });
+    }
+  }, [loading, requestedTimeSlotId, setValue, slots, timeSlotId]);
 
   useEffect(() => {
     if (timeSlotId && !loading) trigger(["timeSlotId", "partySize"]);

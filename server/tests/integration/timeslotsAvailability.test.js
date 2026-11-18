@@ -56,6 +56,7 @@ describe("GET /api/timeslots/availability", () => {
 		const slot = SLOTS[0];
 		const totalSeats = slot.tables.reduce((total, seats) => total + seats);
 		const expected = {
+			timeSlotId: await getTimeSlotId(slot.startISO),
 			available: true,
 			freeSeats: totalSeats,
 			tables: slot.tables.map((freeSeats, index) => {
@@ -77,6 +78,7 @@ describe("GET /api/timeslots/availability", () => {
 		const slot = SLOTS[0];
 		const totalSeats = slot.tables.reduce((total, seats) => total + seats);
 		const expected = {
+			timeSlotId: await getTimeSlotId(slot.startISO),
 			available: false,
 			freeSeats: totalSeats,
 			tables: []
@@ -105,6 +107,7 @@ describe("GET /api/timeslots/availability", () => {
 		const slot = SLOTS[4]; // slot with table list 3
 		const totalSeats = slot.tables.reduce((total, seats) => total + seats);
 		const expected = {
+			timeSlotId: await getTimeSlotId(slot.startISO),
 			available: true,
 			freeSeats: totalSeats,
 			tables: expectedTables

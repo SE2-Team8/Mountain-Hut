@@ -10,9 +10,6 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { dateAndTimeStringsToDate, formatDateTime } from "@/utils/date";
 import { Link } from "react-router";
-import usePageStore from "@/store/pageStore";
-
-const pageStore = usePageStore.getState();
 
 const availabilitySchema = zod.object({
   date: zod.iso.date("Choose a valid date."),
@@ -32,7 +29,6 @@ function getLocalDateValue() {
 
 function PageAvailability() {
   const [result, setResult] = useState(null);
-  const [reservData, setReservData] = useState(null);
   const form = useForm({
     resolver: zodResolver(availabilitySchema),
     mode: "onSubmit",
@@ -60,11 +56,13 @@ function PageAvailability() {
       });
 
       if (response?.success && response.data) {
-        setResult({ kind: "checked", data: response.data, formattedStart: requestedFormattedStart, partySize: values.partySize });
-        setReservData({
-          startDateTime: requestedDateTime,
-          endDateTime: requestedDateTime,
-          partySize: requestedPartySize
+        setResult({
+          kind: "checked",
+          data: response.data,
+          formattedStart: requestedFormattedStart,
+          startDateTime: requestedStart,
+          timeSlotId: response.data.timeSlotId,
+          partySize: requestedPartySize,
         });
 	  } else if (response?.status === 404) {
         setResult({ kind: "missing", formattedStart: requestedFormattedStart });
@@ -209,12 +207,16 @@ function PageAvailability() {
                   </div>
 
                   <Button asChild type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
-                    <Link to="/reservations" viewTransition onClick={() => {
-                      // set reservation data
-                      pageStore.setPageData("/reservations", reservData);
-                      // console.log("Button clicked");
-                      // console.log(reservData);
-                    }} >Make a reservation!</Link>
+                    <Link
+                      to={`/reservations?${new URLSearchParams({
+                        start: result.startDateTime,
+                        timeSlotId: String(result.timeSlotId),
+                        partySize: String(result.partySize),
+                      })}`}
+                      viewTransition
+                    >
+                      Make a reservation!
+                    </Link>
                   </Button>
                 </div>
 				

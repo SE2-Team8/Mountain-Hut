@@ -384,8 +384,9 @@
 			},
 			"TimeSlotAvailable": {
 				"type": "object",
-				"required": ["available", "freeSeats", "tables"],
+				"required": ["timeSlotId", "available", "freeSeats", "tables"],
 				"properties": {
+					"timeSlotId": { "type": "integer", "minimum": 1 },
 					"available": { "type": "boolean" },
 					"freeSeats": { "type": "integer", "minimum": 0},
 					"tables": { "type": "array", "minItems": 0, "items": { "$ref": "#/components/schemas/TableAvailability" } }
