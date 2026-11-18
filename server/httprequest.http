@@ -2,8 +2,8 @@ POST http://localhost:3001/api/auth/login
 content-type: application/json
 
 {
-    "username": "mario.rossi@gmail.com",
-    "password": "strong_password"
+    "username": "r0ssi.mari0.se2.1998@gmail.com",
+    "password": "iLoveHuts"
 }
 ###
 GET http://localhost:3001/api/auth/me
@@ -32,6 +32,21 @@ content-Type: application/json
 ###
 POST http://localhost:3001/api/auth/logout
 
+###
+GET http://localhost:3001/api/reservations/3
+
+###
+PUT http://localhost:3001/api/reservations/3
+content-Type: application/json
+
+{
+    "timeSlotId" : 3,
+    "partySize" : 5,
+    "dietaryRequirements" : [{
+        "allergies": true,
+        "description":"2 milk"
+    }]
+}
 ### 
 GET http://localhost:3001/api/timeslots/availability?start=2027-03-10T12:30:00.000Z&partySize=10
 
