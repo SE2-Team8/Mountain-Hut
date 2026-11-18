@@ -21,16 +21,16 @@ let slot1;
 const bodyOf = (overrides = {}) => ({
     timeSlotId: slot1,
     partySize: 4,
-    allergies: false,
     dietaryRequirements: [],
     ...overrides,
 });
 const book = (agent, overrides = {}) => agent.post("/api/reservations").send(bodyOf(overrides));
 
-const storedRequirements = (row) => ({
-    allergies: row.allergies,
-    dietaryRequirements: JSON.parse(row.dietaryRequirements),
-});
+// one requirement as the client send it
+const requirement = (description, allergies) => ({ description, allergies });
+
+// the list of requirements stored for a reservation
+const storedRequirements = (row) => JSON.parse(row.dietaryRequirements);
 
 beforeAll(initSchema);
 beforeEach(async () => {
@@ -53,76 +53,77 @@ async function expectNothingBooked() {
 describe("POST /api/reservations - requirement: success", () => {
     it("201 and the allergies flag and the list of requirements are stored, in the same order", async () => {
         const agent = await loginAsRole("hiker");
-        const requirements = ["1 vegan, peanut allergy", "1 shellfish allergy"];
-        const res = await book(agent, { allergies: true, dietaryRequirements: requirements });
+        const requirements = [requirement("1 peanut allergy", true), requirement("2 vegetarians", false)];
+        const res = await book(agent, { dietaryRequirements: requirements });
 
         expect(res.status).toBe(201);
         expectEnvelope(res, true);
         const [row] = await getReservations();
 		expect(row.reservId).toBe(res.body.data);
-		expect(storedRequirements(row)).toEqual({ allergies: 1, dietaryRequirements: requirements });
+		expect(storedRequirements(row)).toEqual(requirements);
     });
 
-    // N.B: the booking page merges its two sections allergies and dietaryRestrictions into one list
-    it("allergy items and dietary items sent together are all stored and listed in the email", async () => {
-		const requirements = ["1 allergic to peanuts", "1 allergic to milk", "1 vegetarian", "1 vegan"];
-		const res = await book(await loginAsRole("hiker"), { partySize: 4, allergies: true, dietaryRequirements: requirements });
+    // the booking page sends one item for each line written in its two sections
+    it("allergy items and dietary items sent together are all stored", async () => {
+		const requirements = [
+			requirement("1 allergic to peanuts", true),
+			requirement("1 allergic to milk", true),
+			requirement("1 vegetarian", false),
+			requirement("1 vegan", false),
+		];
+		const res = await book(await loginAsRole("hiker"), { partySize: 4, dietaryRequirements: requirements });
 
 		expect(res.status).toBe(201);
 		const [row] = await getReservations();
-		expect(storedRequirements(row)).toEqual({ allergies: 1, dietaryRequirements: requirements });
-		expect(sendMail.mock.calls[0][0].html).toContain(requirements.join(", "));
+		expect(storedRequirements(row)).toEqual(requirements);
 	});
 
-    it("201 with no allergies and no requirements: nothing special is stored", async () => {
+    it("201 with no requirements: an empty list is stored", async () => {
 		const res = await book(await loginAsRole("hiker"));
 
 		expect(res.status).toBe(201);
 		const [row] = await getReservations();
-		expect(storedRequirements(row)).toEqual({ allergies: 0, dietaryRequirements: [] });
+		expect(storedRequirements(row)).toEqual([]);
 	});
 
     // user story 5, third example of the clarifications: "allergies: no, 2 vegetarians"
     it("requirements without allergies are stored too (e.g. '2 vegetarians')", async () => {
-		const res = await book(await loginAsRole("hiker"), { allergies: false, dietaryRequirements: ["2 vegetarians"] });
+		const requirements = [requirement("2 vegetarians", false)];
+		const res = await book(await loginAsRole("hiker"), { dietaryRequirements: requirements });
 
 		expect(res.status).toBe(201);
 		const [row] = await getReservations();
-		expect(storedRequirements(row)).toEqual({ allergies: 0, dietaryRequirements: ["2 vegetarians"] });
+		expect(storedRequirements(row)).toEqual(requirements);
 	});
 
     it("the requirements of different bookings are kept separate", async () => {
-		await book(await loginAsRole("hiker"), { partySize: 2, allergies: true, dietaryRequirements: ["peanut allergy"] });
-		await book(await loginAsRole("hiker2"), { partySize: 3, dietaryRequirements: ["3 vegans"] });
+		await book(await loginAsRole("hiker"), { partySize: 2, dietaryRequirements: [requirement("peanut allergy", true)] });
+		await book(await loginAsRole("hiker2"), { partySize: 3, dietaryRequirements: [requirement("3 vegans", false)] });
 
 		const rows = await getReservations();
 		expect(rows).toHaveLength(2);
-		expect(storedRequirements(rows[0])).toEqual({ allergies: 1, dietaryRequirements: ["peanut allergy"] });
-		expect(storedRequirements(rows[1])).toEqual({ allergies: 0, dietaryRequirements: ["3 vegans"] });
-	});
-
-    it("allergies sent as the string 'true' (the validator accepts it) is still stored as an allergy", async () => {
-		const res = await book(await loginAsRole("hiker"), { allergies: true, dietaryRequirements: ["peanut allergy"] });
-
-		expect(res.status).toBe(201);
-		const [row] = await getReservations();
-		expect(storedRequirements(row)).toEqual({ allergies: 1, dietaryRequirements: ["peanut allergy"] });
+		expect(storedRequirements(rows[0])).toEqual([requirement("peanut allergy", true)]);
+		expect(storedRequirements(rows[1])).toEqual([requirement("3 vegans", false)]);
 	});
 });
 
 describe("POST /api/reservations - requirements: input validation", () => {
     it.each([
-		["allergies is a text", { allergies: "maybe" }],
-		["allergies is a number", { allergies: 5 }],
-		["allergies is null", { allergies: null }],
 		["dietaryRequirements is a text", { dietaryRequirements: "vegan" }],
-		["dietaryRequirements is an object", { dietaryRequirements: { vegan: 2 } }],
+		["dietaryRequirements is a object", { dietaryRequirements: { description: "vegan", allergies: false } }],
+		["a requirement is a text", { dietaryRequirements: "vegan" }],
 		["a requirement is a number", { dietaryRequirements: [1] }],
 		["a requirement is null", { dietaryRequirements: [null] }],
-		["a requirement is an object", { dietaryRequirements: [{ description: "vegan" }] }],
-		["a requirement is an empty text", { dietaryRequirements: [""] }],
-		["a requirement is only spaces", { dietaryRequirements: ["   "] }],
-		["there are allergies but no description of them", { allergies: true, dietaryRequirements: [] }],
+		["a requirement has no allergies field", { dietaryRequirements: [{ description: "vegan" }] }],
+		["a requirement has no description", { dietaryRequirements: [{ allergies: false }] }],
+		["allergies of a requirement is a text", { dietaryRequirements: [requirement("vegan", "maybe")] }],
+		["allergies of a requirement is a number", { dietaryRequirements: [requirement("vegan", 5)] }],
+		["allergies of a requirement is null", { dietaryRequirements: [requirement("vegan", null)] }],
+		["description of a requirement is a number", { dietaryRequirements: [requirement(5, false)] }],
+		["description of a requirement is null", { dietaryRequirements: [requirement(null, false)] }],
+		["description of a requirement is an empty text", { dietaryRequirements: [requirement("", false)] }],
+		["description of a requirement is only spaces", { dietaryRequirements: [requirement("   ", true)] }],
+		["only one of two requirements is valid", { dietaryRequirements: [requirement("vegan", false), { description: "peanuts" }] }],
 	])("422 when %s, and nothing is booked", async (_label, overrides) => {
 		const res = await book(await loginAsRole("hiker"), overrides);
 
@@ -131,12 +132,9 @@ describe("POST /api/reservations - requirements: input validation", () => {
 		await expectNothingBooked();
 	});
 
-    it.each([
-		["allergies is missing", "allergies"],
-		["dietaryRequirements is missing", "dietaryRequirements"],
-	])("400 when %s: the body must have exactly 4 fields, and nothing is booked", async (_label, missing) => {
+    it("400 when dietaryRequirements is missing: the body must have exactly 3 fields, and nothing is booked", async () => {
 		const body = bodyOf();
-		delete body[missing];
+		delete body.dietaryRequirements;
 		const res = await (await loginAsRole("hiker")).post("/api/reservations").send(body);
 
 		expect(res.status).toBe(400);
@@ -162,7 +160,7 @@ describe("POST /api/reservations - requirements: input validation", () => {
 
 describe("POST /api/reservations - requirements: other rules still apply", () => {
     it("401 without a session: no requirements are stored", async () => {
-		const res = await book(request(app), { allergies: true, dietaryRequirements: ["peanut allergy"] });
+		const res = await book(request(app), { dietaryRequirements: [requirement("peanut allergy", true)] });
 
 		expect(res.status).toBe(401);
 		expectEnvelope(res, false);
@@ -170,14 +168,14 @@ describe("POST /api/reservations - requirements: other rules still apply", () =>
 	});
 
     it("404 for an unknown time slot: no requirements are stored", async () => {
-		const res = await book(await loginAsRole("hiker"), { timeSlotId: 9999, allergies: true, dietaryRequirements: ["peanut allergy"] });
+		const res = await book(await loginAsRole("hiker"), { timeSlotId: 9999, dietaryRequirements: [requirement("peanut allergy", true)] });
 
 		expect(res.status).toBe(404);
 		await expectNothingBooked();
 	});
 
     it("400 when there are not enough free seats: no requirements are stored", async () => {
-		const res = await book(await loginAsRole("hiker"), { partySize: S1.totalSeats + 1, dietaryRequirements: ["2 vegetarians"] });
+		const res = await book(await loginAsRole("hiker"), { partySize: S1.totalSeats + 1, dietaryRequirements: [requirement("2 vegetarians", false)] });
 
 		expect(res.status).toBe(400);
 		await expectNothingBooked();
@@ -185,45 +183,55 @@ describe("POST /api/reservations - requirements: other rules still apply", () =>
 
     it("409 on the second booking of the same slot: the first requirements are kept untouched", async () => {
 		const agent = await loginAsRole("hiker");
-		await book(agent, { partySize: 2, allergies: true, dietaryRequirements: ["peanut allergy"] });
-		const res = await book(agent, { partySize: 2, allergies: false, dietaryRequirements: ["2 vegans"] });
+		await book(agent, { partySize: 2, dietaryRequirements: [requirement("peanut allergy", true)] });
+		const res = await book(agent, { partySize: 2, dietaryRequirements: [requirement("2 vegans", false)] });
 
 		expect(res.status).toBe(409);
 		const rows = await getReservations();
 		expect(rows).toHaveLength(1);
-		expect(storedRequirements(rows[0])).toEqual({ allergies: 1, dietaryRequirements: ["peanut allergy"] });
+		expect(storedRequirements(rows[0])).toEqual([requirement("peanut allergy", true)]);
 	});
 });
 
 describe("POST /api/reservations - requirements: confirmation email", () => {
     const sentHtml = () => sendMail.mock.calls[0][0].html;
 
-    it("tells the hiker about the allergies and lists every requirement", async () => {
-		await book(await loginAsRole("hiker"), { allergies: true, dietaryRequirements: ["1 vegan, peanut allergy", "1 shellfish allergy"] });
+    it("says 'Yes' to allergies and lists every requirement, marking allergies and diets", async () => {
+		await book(await loginAsRole("hiker"), {
+			dietaryRequirements: [requirement("1 allergic to peanuts", true), requirement("1 vegan", false)],
+		});
 
 		expect(sendMail).toHaveBeenCalledTimes(1);
 		expect(sentHtml()).toContain("<strong>Allergies:</strong> Yes");
-		expect(sentHtml()).toContain("1 vegan, peanut allergy");
-		expect(sentHtml()).toContain("1 shellfish allergy");
+		expect(sentHtml()).toContain("1 allergic to peanuts (Allergy), 1 vegan (Diet)");
 	});
 
-    it("says that there are no allergies and no requirements when none were given", async () => {
+    it("says 'No' to allergies and 'None' when there are no requirements", async () => {
 		await book(await loginAsRole("hiker"));
 
 		expect(sentHtml()).toContain("<strong>Allergies:</strong> No");
 		expect(sentHtml()).toContain("<strong>Dietary Requirements:</strong> None");
 	});
 
-    it("lists the requirements given without allergies too", async () => {
-		await book(await loginAsRole("hiker"), { allergies: false, dietaryRequirements: ["2 vegetarians"] });
+	it("says 'No' to allergies but lists the requirements when there are only diets", async () => {
+		await book(await loginAsRole("hiker"), { dietaryRequirements: [requirement("2 vegetarians", false)] });
 
-		expect(sentHtml()).toContain("2 vegetarians");
+		expect(sentHtml()).toContain("<strong>Allergies:</strong> No");
+		expect(sentHtml()).toContain("2 vegetarians (Diet)");
+	});
+
+	it("says 'Yes' to allergies when only one of the requirements is an allergy", async () => {
+		await book(await loginAsRole("hiker"), {
+			dietaryRequirements: [requirement("1 vegan", false), requirement("1 vegetarian", false), requirement("1 milk allergy", true)],
+		});
+
+		expect(sentHtml()).toContain("<strong>Allergies:</strong> Yes");
 	});
 
     it("escapes the html written in a requirement", async () => {
-		await book(await loginAsRole("hiker"), { allergies: true, dietaryRequirements: ["<script>alert(1)</script>"] });
+		await book(await loginAsRole("hiker"), { dietaryRequirements: [requirement("<script>alert(1)</script>", true)] });
 
 		expect(sentHtml()).not.toContain("<script>alert(1)</script>");
 		expect(sentHtml()).toContain("&lt;script&gt;");
 	});
-})
+});
