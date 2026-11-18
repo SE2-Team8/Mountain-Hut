@@ -1,7 +1,20 @@
 import httpClient from "@/lib/http-client";
-import { success } from "zod";
 
+// DEBUG
 const delay = ms => new Promise(res => setTimeout(res, ms));
+const start = new Date("2027-03-10T18:30:00.000Z").toISOString();
+const end = new Date("2027-03-10T20:30:00.000Z").toISOString();
+let reservation = {
+	reservId: 6,
+	timeSlotId: 2,
+	startDateTime: start,
+	endDateTime: end,
+	partySize: 3,
+	dietaryRequirements: [
+		{ allergies: false, description: "2 Vegetarian"},
+		{ allergies: true, description: "1 No nuts"}
+	]
+};
 
 const reservationsApi = {
     create: (data) => httpClient.post('/reservations', data),
@@ -11,23 +24,7 @@ const reservationsApi = {
 		await delay(1000); // temp delay
 		return {
 			success: true,
-			data: {
-				reservId: reservId,
-				timeSlotId: 1,
-				startDateTime: new Date("2027-03-10T17:01:01.000Z").toISOString(),
-				endDateTime: new Date("2027-03-10T18:10:01.000Z").toISOString(),
-				userId: 1,
-				partySize: 3,
-				// OTHER FIELDS
-				dietaryRequirements: [
-					{ allergies: false, description: "2 Vegetarian"},
-					{ allergies: true, description: "1 No nuts"}
-				],
-				tableAssignments: [
-					{tableNumber: 5, takenSeats: 10},
-					{tableNumber: 6, takenSeats: 2},
-				]
-			}
+			data: reservation,
 		}
 	},
 
@@ -35,6 +32,9 @@ const reservationsApi = {
 	update: async (reservId, newReservation) => { // TEMP
 		console.log("called API update reservation");
 		await delay(1000); // temp delay
+		reservation = newReservation;
+		reservation.startDateTime = start;
+		reservation.endDateTime = end;
 		return {
 			success: true,
 			data: {}

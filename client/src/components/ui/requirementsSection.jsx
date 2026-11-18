@@ -112,7 +112,7 @@ function RequirementsSection({ control, errors, addDisabled, disabled }) {
 const requirementItemSchema = zod.object({
   allergies: zod.boolean(),
   people: zod.union([zod.number(), zod.literal("")]),
-  description: zod.string(),
+  description: zod.string().trim().min(1, "Description is required"),
 });
 
 function splitFirstSpace(s) {

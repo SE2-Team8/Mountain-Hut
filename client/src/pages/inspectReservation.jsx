@@ -286,7 +286,7 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 				className="flex-1"
 				disabled={formState.isSubmitting}
 				>
-				Cancel (discard modifications)
+				Discard changes
 				</Button>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -314,7 +314,7 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 				disabled={formState.isSubmitting}
 				onClick={handleConfirmClick}
 			>
-				{formState.isSubmitting ? "Submitting…" : "Confirm modifications"}
+				{formState.isSubmitting ? "Submitting…" : "Confirm changes"}
 			</Button>
 			<AlertDialogContent>
 				<AlertDialogHeader>
@@ -452,11 +452,17 @@ function PageInspectReservation() {
   }
 
   return (
-   <Card className="mx-auto w-full max-w-4xl border-white/70 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle>Reservation details</CardTitle>
-        <CardDescription>Edit your reservation</CardDescription>
-      </CardHeader>
+   <Card className="mx-auto mt-12 w-full max-w-4xl border-white/70 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-sm">
+      
+        {reservationLoaded ?
+			(<CardHeader>
+				<CardTitle>
+				{ mode === ReservationMode.EDIT ? "Edit your reservation" : "Reservation details" }
+				</CardTitle>
+			</CardHeader>) : (
+				<></>
+			)
+		}
       <CardContent>
 		{!reservationLoaded ? (
 			<p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground" role="status">
