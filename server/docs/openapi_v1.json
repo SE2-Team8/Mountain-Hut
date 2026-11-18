@@ -411,10 +411,23 @@
 			},
 			"CreateReservationRequest": {
 				"type": "object",
-				"required": ["timeSlotId", "partySize"],
+				"required": ["timeSlotId", "partySize", "dietaryRequirements"],
 				"properties": {
 					"timeSlotId": { "type": "integer", "minimum": 1 },
-					"partySize": { "type": "integer", "minimum": 1 }
+					"partySize": { "type": "integer", "minimum": 1 },
+					"dietaryRequirements": {
+						"type": "array",
+						"description": "Allergies and dietary needs for the party. Use an empty array when there are none.",
+						"items": { "$ref": "#/components/schemas/DietaryRequirement" }
+					}
+				}
+			},
+			"DietaryRequirement": {
+				"type": "object",
+				"required": ["allergies", "description"],
+				"properties": {
+					"allergies": { "type": "boolean", "description": "True for an allergy, false for a dietary preference or requirement." },
+					"description": { "type": "string", "minLength": 1, "description": "A description of the allergy or dietary need." }
 				}
 			},
 			"Reservation": {
@@ -489,6 +502,6 @@
 				"description": "Not found",
 				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
 			}
-		}
+				}
 	}
 }
