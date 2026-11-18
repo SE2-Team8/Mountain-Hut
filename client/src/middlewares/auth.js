@@ -1,16 +1,21 @@
-import usePageStore from "@/store/pageStore";
 import useUserStore from "@/store/user";
 import { redirect } from "react-router";
-function auth(comingFrom) {
-	return async (_, next) => {
-		// console.log("Location from middleware: ", comingFrom);
-		if (comingFrom) {
-			usePageStore.getState().setPageData("/auth/login", {comingFrom: comingFrom})
-		}
-        const user = await useUserStore.getState().getAuthenticatedUser();
-        if (!user) throw redirect("/auth/login");
-        await next();
+
+async function auth({ request }, next) {
+	const user = await useUserStore.getState().getAuthenticatedUser();
+
+	if (!user) {
+		const requestedUrl = new URL(request.url);
+		const loginUrl = new URL("/auth/login", requestedUrl);
+
+		loginUrl.searchParams.set(
+			"returnTo",
+			`${requestedUrl.pathname}${requestedUrl.search}${requestedUrl.hash}`
+		);
+
+		throw redirect(`${loginUrl.pathname}${loginUrl.search}`);
 	}
+	await next();
 }
 
 export default auth;
