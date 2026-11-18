@@ -208,7 +208,7 @@ function PageAvailability() {
                     </p>
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
+                  <Button asChild type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
                     <Link to="/reservations" viewTransition onClick={() => {
                       // set reservation data
                       pageStore.setPageData("/reservations", reservData);
