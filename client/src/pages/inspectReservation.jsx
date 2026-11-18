@@ -344,32 +344,34 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 
 function ReservationReadView({ reservation, onEdit }) {
   const requirements = reservation.dietaryRequirements ?? [];
-  const hasAllergies = requirements.some((req) => req.allergies === true);
+
+  const valueClass = "font-medium text-muted-foreground";
+  const labelClass = "text-sm text-foreground";
 
   return (
     <div className="space-y-4">
       <dl className="grid gap-3 sm:grid-cols-2">
         <div>
-          <dt className="text-sm text-muted-foreground">Date</dt>
-          <dd className="font-medium">
+          <dt className={labelClass}>Date</dt>
+          <dd className={valueClass}>
             {toDateInputValue(new Date(reservation.startDateTime))}
           </dd>
         </div>
         <div>
-          <dt className="text-sm text-muted-foreground">Party size</dt>
-          <dd className="font-medium">{reservation.partySize}</dd>
+          <dt className={labelClass}>Party size</dt>
+          <dd className={valueClass}>{reservation.partySize}</dd>
         </div>
         <div>
-          <dt className="text-sm text-muted-foreground">Start time</dt>
-          <dd className="font-medium">{reservation.startDateTime.slice(11, 16)}</dd>
+          <dt className={labelClass}>Start time</dt>
+          <dd className={valueClass}>{reservation.startDateTime.slice(11, 16)}</dd>
         </div>
 		<div>
-          <dt className="text-sm text-muted-foreground">End time</dt>
-          <dd className="font-medium">{reservation.endDateTime.slice(11, 16)}</dd>
+          <dt className={labelClass}>End time</dt>
+          <dd className={valueClass}>{reservation.endDateTime.slice(11, 16)}</dd>
         </div>
         <div className="sm:col-span-2">
-		<dt className="text-sm text-muted-foreground">Dietary requirements</dt>
-		<dd className="font-medium">
+		<dt className={labelClass}>Dietary requirements</dt>
+		<dd className={valueClass}>
 			{requirements.length === 0 ? (
 			"None"
 			) : (
