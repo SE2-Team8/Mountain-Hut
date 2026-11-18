@@ -17,7 +17,7 @@ function formatDateTime(date) {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-        timeZone: "Europe/Rome"
+        timeZone: "UTC"
     }).format(new Date(date)).replace(" at ", " at ");
 }
 
