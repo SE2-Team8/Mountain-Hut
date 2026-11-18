@@ -1,53 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarDays, CheckCircle2, Clock3, Search, Users, XCircle } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import * as zod from "zod";
 import api from "@/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { dateAndTimeStringsToDate, formatDateTime } from "@/utils/date";
+import { formatDateTime, getLocalDateValue } from "@/utils/date";
 import { Link } from "react-router";
 
 const availabilitySchema = zod.object({
   date: zod.iso.date("Choose a valid date."),
-  time: zod.iso.time("Choose a valid start time."),
+  timeSlotId: zod.string().min(1, "Choose a time slot.").transform(Number),
   partySize: zod.coerce.number()
     .int("Party size must be a whole number.")
     .min(1, "Enter at least 1 person."),
 });
 
-function getLocalDateValue() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function PageAvailability() {
   const [result, setResult] = useState(null);
+  const [dayAvailability, setDayAvailability] = useState({ date: null, slots: [], error: false });
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
   const form = useForm({
     resolver: zodResolver(availabilitySchema),
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
       date: getLocalDateValue(),
-      time: "",
-      partySize: "1",
+      timeSlotId: "",
+      partySize: 1,
     },
   });
 
-  const { control, handleSubmit, formState } = form;
+  const { control, handleSubmit, formState, setValue } = form;
+  const date = useWatch({ control, name: "date" });
+  const timeSlotId = useWatch({ control, name: "timeSlotId" });
+  const slots = dayAvailability.slots ?? [];
+  const dateIsValid = date && !isNaN(new Date(date).getTime());
+
+  const fetchAvailability = useCallback(async (selectedDate, isCurrent = () => true) => {
+    setLoadingSlots(true);
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    try {
+      const response = await api.timeslots.getAll({
+        from: startOfDay.toISOString(),
+        to: endOfDay.toISOString(),
+      });
+
+      if (!isCurrent()) return;
+
+      if (response?.success && Array.isArray(response.data)) {
+        setDayAvailability({ date: selectedDate, slots: response.data, error: false });
+      } else {
+        setDayAvailability({ date: selectedDate, slots: [], error: true });
+      }
+    } catch {
+      if (isCurrent()) setDayAvailability({ date: selectedDate, slots: [], error: true });
+    } finally {
+      if (isCurrent()) setLoadingSlots(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setValue("timeSlotId", "");
+    setResult(null);
+
+    if (dateIsValid) {
+      let active = true;
+      fetchAvailability(date, () => active);
+      return () => { active = false; };
+    }
+  }, [date, dateIsValid, fetchAvailability, setValue]);
 
   async function handleCheckAvailability(values) {
-    const requestedDateTime = dateAndTimeStringsToDate(values.date, values.time);
 	  const requestedPartySize = values.partySize;
-    const requestedStart = requestedDateTime.toISOString();
-    const requestedFormattedStart = formatDateTime(requestedDateTime);
     setResult(null);
+    const selectedSlot = slots.find((s) => s.timeSlotId === values.timeSlotId);
+    if (!selectedSlot) return;
+
+    const requestedStart = selectedSlot.startDateTime;
+    const requestedFormattedStart = formatDateTime(new Date(requestedStart));
 
     try {
       const response = await api.timeslots.checkAvailability({
@@ -93,51 +132,74 @@ function PageAvailability() {
         <CardContent>
           <form onSubmit={handleSubmit(handleCheckAvailability)}>
             <FieldGroup>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Controller
-                  name="date"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="availability-date"><CalendarDays aria-hidden="true" className="size-4" />Date</FieldLabel>
-                      <Input
-                        {...field}
-                        id="availability-date"
-                        type="date"
-                        disabled={formState.isSubmitting}
-                        aria-invalid={fieldState.invalid}
-                        onChange={(event) => {
-                          field.onChange(event);
-                          setResult(null);
-                        }}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
 
-                <Controller
-                  name="time"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="availability-time"><Clock3 aria-hidden="true" className="size-4" />Start time</FieldLabel>
-                      <Input
-                        {...field}
-                        id="availability-time"
-                        type="time"
-                        disabled={formState.isSubmitting}
-                        aria-invalid={fieldState.invalid}
-                        onChange={(event) => {
-                          field.onChange(event);
-                          setResult(null);
-                        }}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-              </div>
+              <Controller
+                name="date"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="availability-date"><CalendarDays aria-hidden="true" className="size-4" />Date</FieldLabel>
+                    <Input
+                      {...field}
+                      id="availability-date"
+                      type="date"
+                      disabled={formState.isSubmitting}
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="timeSlotId"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid} className="mt-2">
+                    <FieldLabel>Available slots</FieldLabel>
+                    
+                    {!dateIsValid ? (
+                      <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        Choose a valid date.
+                      </p>
+                    ) : loadingSlots ? (
+                      <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        Loading available times...
+                      </p>
+                    ) : dayAvailability.error ? (
+                      <p className="rounded-xl border border-dashed p-4 text-center text-sm text-destructive">
+                        Could not load timeslots.
+                      </p>
+                    ) : slots.length === 0 ? (
+                      <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        No slots available on this date.
+                      </p>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2 mt-2">
+                        {slots.map((slot) => {
+                          const isSelected = String(field.value) === String(slot.timeSlotId);
+                          return (
+                            <Button
+                              key={slot.timeSlotId}
+                              type="button"
+                              variant={isSelected ? "default" : "outline"}
+                              className="h-auto min-h-14 justify-between px-4 py-2 text-left"
+                              onClick={() => {
+                                field.onChange(String(slot.timeSlotId));
+                                setResult(null);
+                              }}
+                            >
+                              <span className="font-semibold">{formatDateTime(new Date(slot.startDateTime))}</span>
+                              <span className="text-xs">{slot.freeSeats} seats</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
               <Controller
                 name="partySize"
@@ -153,19 +215,28 @@ function PageAvailability() {
                       min="1"
                       step="1"
                       value={field.value ?? ""}
-                      disabled={formState.isSubmitting}
+
+                      disabled={formState.isSubmitting || !timeSlotId}
                       aria-invalid={fieldState.invalid}
                       onChange={(event) => {
-                        field.onChange(event.target.value);
+                        field.onChange(event.target.value === "" ? "" : Number(event.target.value));
                         setResult(null);
                       }}
                     />
+                    {!timeSlotId && (
+                      <p className="text-sm text-muted-foreground">Choose a time slot first</p>
+                    )}
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
 
-              <Button type="submit" size="lg" className="w-full rounded-xl" disabled={formState.isSubmitting}>
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full rounded-xl mt-4" 
+                disabled={formState.isSubmitting || !timeSlotId}
+              >
                 <Search aria-hidden="true" />
                 {formState.isSubmitting ? "Checking availability…" : "Check availability"}
               </Button>

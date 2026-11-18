@@ -9,30 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { formatDateTime } from "@/utils/date";
+import { formatDateTime, getLocalDateValue } from "@/utils/date";
 import { useNavigate, useSearchParams } from "react-router";
 import { RequirementsSection, requirementItemSchema, requirementItemToObj } from "@/components/ui/requirementsSection";
 
 const RESERVATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
 const EMPTY_SLOTS = Object.freeze([]);
-
-function toDateTimeLocal(date) {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return localDate.toISOString().slice(0, 19);
-}
-
-function getTodayRange() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date();
-  end.setHours(23, 59, 59, 0);
-
-  return {
-    from: toDateTimeLocal(start),
-    to: toDateTimeLocal(end),
-  };
-}
 
 function getReservationPrefill(searchParams, todayRange) {
   const startParam = searchParams.get("start");
@@ -40,6 +22,7 @@ function getReservationPrefill(searchParams, todayRange) {
   const requestedStart = parsedStart && Number.isFinite(parsedStart.getTime())
     ? parsedStart
     : null;
+  
   const requestedPartySize = Number(searchParams.get("partySize"));
   const partySize = Number.isInteger(requestedPartySize) && requestedPartySize >= 1
     ? requestedPartySize
@@ -48,25 +31,17 @@ function getReservationPrefill(searchParams, todayRange) {
   const requestedTimeSlotId = Number.isInteger(requestedTimeSlotIdValue) && requestedTimeSlotIdValue >= 1
     ? requestedTimeSlotIdValue
     : null;
-  const localStart = requestedStart ? toDateTimeLocal(requestedStart) : null;
+  const localDate = requestedStart ? getLocalDateValue(requestedStart) : getLocalDateValue();
 
   return {
     requestedTimeSlotId,
     formValues: {
-      from: localStart ?? todayRange.from,
-      to: localStart ?? todayRange.to,
+      date: localDate,
       timeSlotId: "",
       partySize,
       dietaryRequirements: [],
     },
   };
-}
-
-function isValidRange(from, to) {
-  const fromTime = new Date(from).getTime();
-  const toTime = new Date(to).getTime();
-
-  return Number.isFinite(fromTime) && Number.isFinite(toTime) && fromTime <= toTime;
 }
 
 function isBookable(slot) {
@@ -93,25 +68,16 @@ function getPartySizeErrors(items, partySize) {
 function PageReservations() {
   const [availability, setAvailability] = useState({ rangeKey: null, slots: [], error: false });
   const [loading, setLoading] = useState(true);
-  const todayRange = getTodayRange();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { requestedTimeSlotId, formValues: formInitialValues } = getReservationPrefill(searchParams, todayRange);
+  const { requestedTimeSlotId, formValues: formInitialValues } = getReservationPrefill(searchParams);
 
   const formSchema = zod.object({
-    from: zod.string().min(1, "Start date and time are required"),
-    to: zod.string().min(1, "End date and time are required"),
+    date: zod.string().min(1, "Date is required"),
     timeSlotId: zod.string().min(1, "Choose an available time slot").transform(Number),
     partySize: zod.coerce.number().int().min(1, "Enter at least 1 person"),
     dietaryRequirements: zod.array(requirementItemSchema),
   }).superRefine((values, context) => {
-    if (values.from && values.to && !isValidRange(values.from, values.to)) {
-      context.addIssue({
-        code: "custom",
-        path: ["to"],
-        message: "End date and time must be after the start",
-      });
-    }
 
     values.dietaryRequirements.forEach((item, index) => {
       if (!Number.isInteger(item.people) || item.people < 1) {
@@ -182,42 +148,45 @@ function PageReservations() {
   });
 
   const { handleSubmit, setValue, trigger, control, formState } = form;
-  const from = useWatch({ control, name: "from" });
-  const to = useWatch({ control, name: "to" });
+  const date = useWatch({ control, name: "date" });
   const timeSlotId = useWatch({ control, name: "timeSlotId" });
   const partySize = Number(useWatch({ control, name: "partySize" }));
   const dietaryRequirements = useWatch({ control, name: "dietaryRequirements" });
-  const rangeKey = JSON.stringify([from, to]);
-  const rangeIsValid = isValidRange(from, to);
-  const rangeAvailability = availability.rangeKey === rangeKey ? availability : null;
-  const slots = rangeAvailability?.slots ?? EMPTY_SLOTS;
-  const availabilityError = rangeAvailability?.error ?? false;
-  const isLoading = rangeIsValid && (loading || !rangeAvailability);
+  const dateKey = date;
+  const dateIsValid = date && !isNaN(new Date(date).getTime());
+  const dayAvailability = availability.rangeKey === dateKey ? availability : null;
+  const slots = dayAvailability?.slots ?? EMPTY_SLOTS;
+  const availabilityError = dayAvailability?.error ?? false;
+  const isLoading = dateIsValid && (loading || !dayAvailability);
   const selectedSlot = slots.find((slot) => slot.timeSlotId === Number(timeSlotId));
   const bookableSlots = slots.filter(isBookable);
   const onlyOne = bookableSlots.length == 1 ? true : false;
 
-  const fetchAvailability = useCallback(async (rangeStart, rangeEnd, isCurrent = () => true) => {
+  const fetchAvailability = useCallback(async (selectedDate, isCurrent = () => true) => {
     setLoading(true);
-    const requestRangeKey = JSON.stringify([rangeStart, rangeEnd]);
+
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     try {
       const response = await api.timeslots.getAll({
-        from: new Date(rangeStart).toISOString(),
-        to: new Date(rangeEnd).toISOString(),
+        from: startOfDay.toISOString(),
+        to: endOfDay.toISOString(),
       });
 
       if (!isCurrent()) return response;
 
       if (response?.success && Array.isArray(response.data)) {
-        setAvailability({ rangeKey: requestRangeKey, slots: response.data, error: false });
+        setAvailability({ rangeKey: selectedDate, slots: response.data, error: false });
       } else {
-        setAvailability({ rangeKey: requestRangeKey, slots: [], error: true });
+        setAvailability({ rangeKey: selectedDate, slots: [], error: true });
       }
 
       return response;
     } catch {
-      if (isCurrent()) setAvailability({ rangeKey: requestRangeKey, slots: [], error: true });
+      if (isCurrent()) setAvailability({ rangeKey: selectedDate, slots: [], error: true });
       return null;
     } finally {
       if (isCurrent()) setLoading(false);
@@ -228,17 +197,17 @@ function PageReservations() {
     setValue("timeSlotId", "");
     setValue("partySize", formInitialValues.partySize);
 
-    if (rangeIsValid) {
+    if (dateIsValid) {
       let active = true;
       Promise.resolve().then(() => {
-        if (active) fetchAvailability(from, to, () => active);
+        if (active) fetchAvailability(date, () => active);
       });
 
       return () => {
         active = false;
       };
     }
-  }, [fetchAvailability, formInitialValues.partySize, from, rangeIsValid, setValue, to]);
+  }, [fetchAvailability, formInitialValues.partySize, date, dateIsValid, setValue]);
 
   useEffect(() => {
     if (loading || !requestedTimeSlotId || timeSlotId) return;
@@ -274,7 +243,7 @@ function PageReservations() {
       return;
     }
 
-    await fetchAvailability(from, to);
+    await fetchAvailability(date);
   }
 
   return (
@@ -292,36 +261,16 @@ function PageReservations() {
             <FieldGroup>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Controller
-                  name="from"
+                  name="date"
                   control={control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="reservation-from">From</FieldLabel>
+                      <FieldLabel htmlFor="reservation-date">Date</FieldLabel>
                       <Input
                         {...field}
                         id="reservation-from"
-                        type="datetime-local"
+                        type="date"
                         step="1"
-                        disabled={formState.isSubmitting}
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                    </Field>
-                  )}
-                />
-
-                <Controller
-                  name="to"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="reservation-to">To</FieldLabel>
-                      <Input
-                        {...field}
-                        id="reservation-to"
-                        type="datetime-local"
-                        step="1"
-                        min={from || undefined}
                         disabled={formState.isSubmitting}
                         aria-invalid={fieldState.invalid}
                       />
@@ -338,7 +287,7 @@ function PageReservations() {
                   <Field data-invalid={fieldState.invalid}>
                     <div className="flex items-end justify-between gap-3">
                       <div>
-                        <FieldLabel>Available times</FieldLabel>
+                        <FieldLabel>Available slots</FieldLabel>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {isLoading ? "Checking availability…" : `${bookableSlots.length} open ${bookableSlots.length === 1 ? "slot" : "slots"}`}
                         </p>
@@ -346,9 +295,9 @@ function PageReservations() {
                       <Clock3 aria-hidden="true" className="mb-1 size-5 text-muted-foreground" />
                     </div>
 
-                    {!rangeIsValid ? (
+                    {!dateIsValid ? (
                       <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-                        Choose a valid date and time range to see available slots.
+                        Choose a valid date to see available slots.
                       </p>
                     ) : isLoading ? (
                       <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground" role="status">
@@ -360,7 +309,7 @@ function PageReservations() {
                       </p>
                     ) : bookableSlots.length === 0 ? (
                       <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-                        No bookable slots in this range. Try another date or time.
+                        No bookable slots in this range. Try another date.
                       </p>
                     ) : (
                       <div className="grid gap-2 sm:grid-cols-2">
