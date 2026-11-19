@@ -49,6 +49,7 @@ async function snapshot(reservId) {
         assignments: await getAssignments(reservId),
         freeSeats1: await getFreeSeats(slot1),
         freeSeats2: await getFreeSeats(slot2),
+        freeSeats5: await getFreeSeats(slot5),
     };
 }
 
@@ -457,29 +458,31 @@ describe("PUT /api/reservations/:id - input validation", () => {
 describe("PUT /api/reservations/:id - time limits", () => {
     it("the new slot must start at least 2 hours later: accepted exactly 2 hours before", async () => {
 		const agent = await loginAsRole("hiker");
-		const reservId = await book(agent, { timeSlotId: slot2, partySize: 2 });
-		freezeTime(S2.start - 2 * HOUR);
+		const reservId = await book(agent, { timeSlotId: slot5, partySize: 2 });
+		freezeTime(S1.start - 2 * HOUR);
 
-		expect((await update(agent, reservId, { timeSlotId: slot2, partySize: 3 })).status).toBe(200);
+		expect((await update(agent, reservId, { timeSlotId: slot1, partySize: 2 })).status).toBe(200);
 	});
 
     it("the new slot must start at least 2 hours later: refused 1 second after the limit, and nothing changes", async () => {
 		const agent = await loginAsRole("hiker");
-		const reservId = await book(agent, { partySize: 2 });
+		const reservId = await book(agent, { timeSlotId: slot5, partySize: 2 });
 		sendMail.mockClear();
-		const before = await snapshot(reservId);
-		freezeTime(S2.start - 2 * HOUR + 1000);
+		const before = { ...(await snapshot(reservId)), freeSeats5: await getFreeSeats(slot5) };
+		freezeTime(S1.start - 2 * HOUR + 1000);
 
-		const res = await update(agent, reservId, { timeSlotId: slot2, partySize: 2 });
+		const res = await update(agent, reservId, { timeSlotId: slot1, partySize: 2 });
 
 		expect(res.status).toBe(400);
 		expectEnvelope(res, false);
+        expect({ ...(await snapshot(reservId)), freeSeats5: await getFreeSeats(slot5) }).toEqual(before);
+        await expectSeatsConsistent(slot5);
 		await expectUnchanged(reservId, before);
 	});
 
     it("refused when the new slot has already started", async () => {
 		const agent = await loginAsRole("hiker");
-		const reservId = await book(agent, { timeSlotId: slot2, partySize: 2 });
+		const reservId = await book(agent, { timeSlotId: slot5, partySize: 2 });
 		freezeTime(S2.start + 60e3);
 
 		expect((await update(agent, reservId, { timeSlotId: slot2, partySize: 3 })).status).toBe(400);

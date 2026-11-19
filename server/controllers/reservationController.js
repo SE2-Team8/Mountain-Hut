@@ -84,7 +84,7 @@ const reservationController = {
 	retrieveAll: async (req, res) => {
 		const reservations = await getReservationsByUser(req.user.userId);
 		if (!reservations || reservations.length === 0)
-			return responseError(res, null, "No reservations found for this user", 404);
+			return responseSuccess(res, reservations, "No reservations found for this user");
 		return responseSuccess(res, reservations, "Reservations retrieved");
 	},
 
@@ -108,7 +108,7 @@ const reservationController = {
 		const bookedStartMs = reservation.startDateTime.getTime();
 		const nowMs = Date.now();
 		const msUntilBookedSlot = bookedStartMs - nowMs;
-		if (msUntilBookedSlot > 2 * 60 * 60 * 1000 && msUntilBookedSlot < 48 * 60 * 60 * 1000)
+		if (msUntilBookedSlot < 48 * 60 * 60 * 1000)
 			return responseError(res, null, "Reservation has to be updated at least 48 hours before the slot.", 400);
 
 		const reservationsForSlot = await getReservationsByUser(userId, timeSlotId);
