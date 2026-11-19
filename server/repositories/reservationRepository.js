@@ -54,7 +54,7 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 	);
 
 	if (!reservRows)
-		return null;
+		return [];
 
 	if (timeSlotId != null)
 		reservRows = reservRows.filter((row) => row.timeSlotId == timeSlotId);

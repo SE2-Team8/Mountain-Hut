@@ -84,7 +84,7 @@ const reservationController = {
 	retrieveAll: async (req, res) => {
 		const reservations = await getReservationsByUser(req.user.userId);
 		if (!reservations || reservations.length === 0)
-			return responseSuccess(res, reservations, "No reservations found for this user");
+			return responseSuccess(res, [], "No reservations found for this user");
 		return responseSuccess(res, reservations, "Reservations retrieved");
 	},
 
