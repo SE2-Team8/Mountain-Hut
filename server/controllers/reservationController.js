@@ -94,9 +94,14 @@ const reservationController = {
 		const timeSlot = await getTimeSlotById(timeSlotId);
 		if (!timeSlot) return responseError(res, null, `Time slot with timeSlotId=${timeSlotId} not found`, 404);
 
-		const startMs = timeSlot.startDateTime.getTime();
-		if (startMs - Date.now() < 2 * 60 * 60 * 1000)
-			return responseError(res, null, "Reservation has to be updated at least 2 hours before the slot.", 400);
+		const newStartMs = timeSlot.startDateTime.getTime();
+		if (newStartMs - Date.now() < 2 * 60 * 60 * 1000)
+			return responseError(res, null, "Reservation has to be updated at least 2 hours before the new slot.", 400);
+
+		const bookedStartMs = reservation.startDateTime.getTime();
+		const hoursUntilBookedSlot = (bookedStartMs - Date.now()) / (60 * 60 * 1000);
+		if (hoursUntilBookedSlot > 2 && hoursUntilBookedSlot < 48)
+			return responseError(res, null, "Reservation has to be updated at least 48 hours before the slot.", 400);
 
 		const reservationsForSlot = await getReservationsByUser(userId, timeSlotId);
 		if (reservationsForSlot?.some(item => item.reservId !== reservId))
