@@ -99,8 +99,9 @@ const reservationController = {
 			return responseError(res, null, "Reservation has to be updated at least 2 hours before the new slot.", 400);
 
 		const bookedStartMs = reservation.startDateTime.getTime();
-		const hoursUntilBookedSlot = (bookedStartMs - Date.now()) / (60 * 60 * 1000);
-		if (hoursUntilBookedSlot > 2 && hoursUntilBookedSlot < 48)
+		const nowMs = Date.now();
+		const msUntilBookedSlot = bookedStartMs - nowMs;
+		if (msUntilBookedSlot > 2 * 60 * 60 * 1000 && msUntilBookedSlot < 48 * 60 * 60 * 1000)
 			return responseError(res, null, "Reservation has to be updated at least 48 hours before the slot.", 400);
 
 		const reservationsForSlot = await getReservationsByUser(userId, timeSlotId);
