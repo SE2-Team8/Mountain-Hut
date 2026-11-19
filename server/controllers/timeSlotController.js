@@ -1,5 +1,6 @@
-import { getTimeSlotByStart, getAllTimeSlots, getTimeSlotById, createTimeSlot } from "../repositories/timeSlotRepository.js";
+import { getTimeSlotByStart, checkSlotAvailability, getAllTimeSlots, getTimeSlotById, createTimeSlot } from "../repositories/timeSlotRepository.js";
 import { responseError, responseSuccess } from "../utils/response.js";
+
 
 const timeSlotController = {
     getAll: async (req, res) => {
@@ -16,6 +17,16 @@ const timeSlotController = {
         if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
 
         return responseSuccess(res, slot, "Time slot retrieved");
+    },
+
+    getByStartAndPartySize: async (req, res) => {
+        const start = req.query.start instanceof Date ? req.query.start : new Date(req.query.start);
+        const slot = await getTimeSlotByStart(start);
+        if (!slot) return responseError(res, null, `Time slot starting on ${start} not found`, 404);
+        else{
+            const configuration = await checkSlotAvailability(slot.timeSlotId, req.query.partySize);
+            return responseSuccess(res, { ...configuration, timeSlotId: slot.timeSlotId }, "Configuration Retrived")
+        }
     },
 
     create: async (req, res) => {
@@ -35,6 +46,19 @@ const timeSlotController = {
         const existing = await getTimeSlotByStart(from);
         if (existing)   // no other slot can start at same time
             return responseError(res, null, `A time slot starting at that time already exists`, 409)
+
+        const startTime = from.getTime();
+        const endTime = to.getTime();
+        const slots = await getAllTimeSlots();
+        if (slots && slots.length > 0){
+            let slotOverlap = null;
+            for (let s of slots){
+                if (s.endDateTime.getTime() > startTime && s.startDateTime.getTime() < endTime) {
+                    slotOverlap = s.timeSlotId;
+                };
+            }
+            if (slotOverlap !== null) return responseError(res, null, `There is an overlap with time slot ${slotOverlap}`, 409);
+        }
 
         try {
             const timeSlotId = await createTimeSlot(from, to, tables ?? null, copyFromTimeSlotId ?? null);

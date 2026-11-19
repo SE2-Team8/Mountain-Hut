@@ -5,6 +5,7 @@ import app from "../../index.js";
 import { PWD_HASH_LEN, SALT_LEN } from "../../repositories/userRepository.js";
 import { dateToStringISO } from "../../utils/dateTimeFormatter.js";
 import { queryAll, queryGet, queryRun } from "../../utils/query.js";
+import { createDBTables, deleteDBData } from "../../database/migration.js";
 
 
 export const USERS = {
@@ -16,12 +17,14 @@ export const USERS = {
 
 const TABLE_LIST_1 = [6, 4, 6, 6, 4, 8]; 
 const TABLE_LIST_2 = [4, 4, 4, 6, 6, 6]; 
+const TABLE_LIST_3 = [4, 6, 8]; 
 
 export const SLOTS = [
 	{ start: Date.UTC(2027, 2, 10, 12, 30), end: Date.UTC(2027, 2, 10, 14, 30), tables: TABLE_LIST_1 },
 	{ start: Date.UTC(2027, 2, 10, 18, 30), end: Date.UTC(2027, 2, 10, 19, 30), tables: TABLE_LIST_2 },
 	{ start: Date.UTC(2027, 2, 10, 19, 30), end: Date.UTC(2027, 2, 10, 21, 0), tables: TABLE_LIST_2 },
 	{ start: Date.UTC(2027, 2, 11, 12, 0), end: Date.UTC(2027, 2, 11, 14, 0), tables: [] },
+	{ start: Date.UTC(2027, 2, 12, 12, 0), end: Date.UTC(2027, 2, 12, 14, 0), tables: TABLE_LIST_3 },
 ].map((s) => ({
 	...s,
 	startISO: dateToStringISO(new Date(s.start)),
@@ -51,67 +54,69 @@ function assertTestDatabase() {
 
 export const initSchema = async () => {
 	assertTestDatabase();
-	await queryRun(`DROP TABLE IF EXISTS tableAssignments`);
-	await queryRun(`DROP TABLE IF EXISTS tables`);
-	await queryRun(`DROP TABLE IF EXISTS reservations`);
-	await queryRun(`DROP TABLE IF EXISTS timeSlots`);
-	await queryRun(`DROP TABLE IF EXISTS users`);
+	await createDBTables();
+	// await queryRun(`DROP TABLE IF EXISTS tableAssignments`);
+	// await queryRun(`DROP TABLE IF EXISTS tables`);
+	// await queryRun(`DROP TABLE IF EXISTS reservations`);
+	// await queryRun(`DROP TABLE IF EXISTS timeSlots`);
+	// await queryRun(`DROP TABLE IF EXISTS users`);
 
-	await queryRun(`CREATE TABLE users (
-		userId INTEGER PRIMARY KEY AUTOINCREMENT,
-		passwordHash TEXT NOT NULL,
-		passwordSalt TEXT NOT NULL,
-		role TEXT NOT NULL CHECK (role IN ('HIKER', 'EMPLOYEE', 'WARDEN')),
-		fullName TEXT NOT NULL,
-		email TEXT UNIQUE NOT NULL,
-		phoneNumber TEXT NOT NULL,
-		notes TEXT,
-		emergencyContact TEXT
-	)`);
+	// await queryRun(`CREATE TABLE users (
+	// 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	passwordHash TEXT NOT NULL,
+	// 	passwordSalt TEXT NOT NULL,
+	// 	role TEXT NOT NULL CHECK (role IN ('HIKER', 'EMPLOYEE', 'WARDEN')),
+	// 	fullName TEXT NOT NULL,
+	// 	email TEXT UNIQUE NOT NULL,
+	// 	phoneNumber TEXT NOT NULL,
+	// 	notes TEXT,
+	// 	emergencyContact TEXT
+	// )`);
 
-	await queryRun(`CREATE TABLE timeSlots (
-		timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
-		startDateTime TEXT UNIQUE NOT NULL,
-		endDateTime TEXT NOT NULL
-	)`);
+	// await queryRun(`CREATE TABLE timeSlots (
+	// 	timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	startDateTime TEXT UNIQUE NOT NULL,
+	// 	endDateTime TEXT NOT NULL
+	// )`);
 
-	await queryRun(`CREATE TABLE reservations (
-		reservId INTEGER PRIMARY KEY AUTOINCREMENT,
-		userId INTEGER NOT NULL,
-		timeSlotId INTEGER NOT NULL,
-		partySize INTEGER NOT NULL,
-		FOREIGN KEY (userId) REFERENCES users(userId),
-		FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
-	)`);
+	// await queryRun(`CREATE TABLE reservations (
+	// 	reservId INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	userId INTEGER NOT NULL,
+	// 	timeSlotId INTEGER NOT NULL,
+	// 	partySize INTEGER NOT NULL,
+	// 	FOREIGN KEY (userId) REFERENCES users(userId),
+	// 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
+	// )`);
 
-	await queryRun(`CREATE TABLE tables (
-		tableId INTEGER PRIMARY KEY AUTOINCREMENT,
-		tableNumber INTEGER NOT NULL,
-		totalSeats INTEGER NOT NULL DEFAULT 0,
-		freeSeats INTEGER NOT NULL DEFAULT 0,
-		timeSlotId INTEGER NOT NULL,
-		FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId),
-		UNIQUE (timeSlotId, tableNumber)
-	)`);
+	// await queryRun(`CREATE TABLE tables (
+	// 	tableId INTEGER PRIMARY KEY AUTOINCREMENT,
+	// 	tableNumber INTEGER NOT NULL,
+	// 	totalSeats INTEGER NOT NULL DEFAULT 0,
+	// 	freeSeats INTEGER NOT NULL DEFAULT 0,
+	// 	timeSlotId INTEGER NOT NULL,
+	// 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId),
+	// 	UNIQUE (timeSlotId, tableNumber)
+	// )`);
 
-	await queryRun(`CREATE TABLE tableAssignments (
-		tableId INTEGER NOT NULL,
-		reservId INTEGER NOT NULL,
-		occupiedSeats INTEGER NOT NULL,
-		PRIMARY KEY (tableId, reservId),
-		FOREIGN KEY (tableId) REFERENCES tables(tableId),
-		FOREIGN KEY (reservId) REFERENCES reservations(reservId)
-	)`);
+	// await queryRun(`CREATE TABLE tableAssignments (
+	// 	tableId INTEGER NOT NULL,
+	// 	reservId INTEGER NOT NULL,
+	// 	occupiedSeats INTEGER NOT NULL,
+	// 	PRIMARY KEY (tableId, reservId),
+	// 	FOREIGN KEY (tableId) REFERENCES tables(tableId),
+	// 	FOREIGN KEY (reservId) REFERENCES reservations(reservId)
+	// )`);
 };
 
 export const clear_db = async () => {
 	assertTestDatabase();
-	await queryRun(`DELETE FROM tableAssignments`);
-	await queryRun(`DELETE FROM tables`);
-	await queryRun(`DELETE FROM timeSlots`);
-	await queryRun(`DELETE FROM reservations`);
-	await queryRun(`DELETE FROM users`);
-	await queryRun(`DELETE FROM sqlite_sequence`);
+	await deleteDBData();
+	// await queryRun(`DELETE FROM tableAssignments`);
+	// await queryRun(`DELETE FROM tables`);
+	// await queryRun(`DELETE FROM timeSlots`);
+	// await queryRun(`DELETE FROM reservations`);
+	// await queryRun(`DELETE FROM users`);
+	// await queryRun(`DELETE FROM sqlite_sequence`);
 };
 
 export const seed_db = async () => {
@@ -145,7 +150,7 @@ export const resetDb = async () => {
 
 export async function loginAs(email, password) {
 	const agent = request.agent(app);
-	const res = await agent.post("/api/sessions").send({ username: email, password });
+	const res = await agent.post("/api/auth/login").send({ username: email, password });
 	if (res.status !== 200)
 		throw new Error(`Login failed for ${email}: ${res.status}`);
 	return agent;

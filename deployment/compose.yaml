@@ -1,0 +1,14 @@
+services:
+  app:
+    image: ${DOCKERHUB_IMAGE:?Set DOCKERHUB_IMAGE in deployment/.env}
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:3001"
+    volumes:
+      - mountain-hut-data:/data
+
+volumes:
+  mountain-hut-data:

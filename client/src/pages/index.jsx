@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowRight, CalendarCheck, ClipboardList, LogIn, Users, Utensils } from "lucide-react";
+import { ArrowRight, CalendarCheck, ClipboardList, LogIn, Search, Users, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useUserStore from "@/store/user";
@@ -55,10 +55,13 @@ function PageIndex() {
                 {!isStaff && (
                     <div className="mx-auto flex max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center">
                         <Button size="lg" className={heroButton} asChild>
-                            <Link to="/reservations" viewTransition><CalendarCheck />Book a table</Link>
+                            <Link to="/availability" viewTransition><Search />Check availability</Link>
+                        </Button>
+                        <Button size="lg" variant="secondary" className={heroButton} asChild>
+                            <Link to="/reservations/new" viewTransition><CalendarCheck />Book a table</Link>
                         </Button>
                         {!user && (
-                            <Button size="lg" variant="secondary" className={heroButton} asChild>
+                            <Button size="lg" variant="outline" className={heroButton} asChild>
                                 <Link to="/auth/login" viewTransition><LogIn />Login</Link>
                             </Button>
                         )}

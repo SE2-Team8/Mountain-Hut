@@ -1,0 +1,18 @@
+services:
+  app:
+    image: mountain-hut-local:dev
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      NODE_ENV: production
+      DB_CONNECTION: /data/mountain-hut.sqlite
+    volumes:
+      - mountain-hut-data:/data
+    ports:
+      - "${WEB_PORT:-8080}:3001"
+
+volumes:
+  mountain-hut-data:

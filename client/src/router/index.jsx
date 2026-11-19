@@ -4,12 +4,15 @@ import LayoutError from "@/layouts/error";
 import PageIndex from "@/pages";
 import Page404 from "@/pages/404";
 import PageLogin from "@/pages/login";
-import PageReservations from "@/pages/reservations";
+import PageCreateReservation from "@/pages/createReservation";
+import PageMyReservations from "@/pages/reservations";
 import PageCapacity from "@/pages/capacity";
+import PageAvailability from "@/pages/availability";
 import PageSignUp from "@/pages/signup";
 import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
 import auth from "@/middlewares/auth";
+import PageInspectReservation from "@/pages/inspectReservation";
 
 const router = createBrowserRouter([
     {
@@ -30,8 +33,22 @@ const router = createBrowserRouter([
                 //middleware: [auth],
             },
             {
+                path: 'availability',
+                Component: PageAvailability,
+            },
+            {
                 path: 'reservations',
-                Component: PageReservations,
+                Component: PageMyReservations,
+                middleware: [auth],
+            },
+            {
+                path: 'reservations/new',
+                Component: PageCreateReservation,
+                middleware: [auth],
+            },
+            {
+                path: 'reservations/:reservation_id',
+                Component: PageInspectReservation,
                 middleware: [auth],
             },
             {

@@ -31,8 +31,10 @@ describe("GET /api/timeslots", () => {
 
 		expect(res.status).toBe(200);
 		expectEnvelope(res, true);
-		expect(res.body.data).toEqual([expected(S1, 1), expected(S2, 2), expected(S3, 3), expected(S4, 4)]);
-		expect(res.body.data.map((s) => s.freeSeats)).toEqual([34, 30, 30, 0]);
+		const expectedSlots = SLOTS.map((slot, index) => expected(slot, index + 1));
+		const expectedFreeSeats = expectedSlots.map((slot) => slot.freeSeats);
+		expect(res.body.data).toEqual(expectedSlots);
+		expect(res.body.data.map((s) => s.freeSeats)).toEqual(expectedFreeSeats);
 	});
 
 	it("200 and an empty list when there are no slots", async () => {
@@ -46,8 +48,8 @@ describe("GET /api/timeslots", () => {
 	describe("filters", () => {
 		it("from: slots starting at or after it (bound included)", async () => {
 			const res = await request(app).get("/api/timeslots").query({ from: S2.startISO });
-
-			expect(startsOf(res)).toEqual([iso(S2), iso(S3), iso(S4)]);
+			const expectedStartDates = SLOTS.slice(1).map(slot => iso(slot));
+			expect(startsOf(res)).toEqual(expectedStartDates);
 		});
 
 		it("to: slots starting at or before it (bound included)", async () => {
@@ -265,6 +267,28 @@ describe("POST /api/timeslots - invalid data", ()=>{
 	})
 
 })
+
+describe("POST /api/timeslots - overlaps", () => {
+	it.each([
+		["starts before, ends inside (partial left)", UTCToISOString(2027, 2, 10, 11, 30), UTCToISOString(2027, 2, 10, 13, 30)],
+		["starts inside, ends after (partial right)", UTCToISOString(2027, 2, 10, 13, 30), UTCToISOString(2027, 2, 10, 15, 30)],
+		["completely inside (enclosed)", UTCToISOString(2027, 2, 10, 13, 0), UTCToISOString(2027, 2, 10, 14, 0)],
+		["completely encloses the new slot (enclosing)", UTCToISOString(2027, 2, 10, 11, 30), UTCToISOString(2027, 2, 10, 15, 30)]
+	])("409 if %s", async (_label, startDateTime, endDateTime) => {
+		const agent = await loginAsRole("employee");
+		const res = await agent.post('/api/timeslots').send({
+			startDateTime,
+			endDateTime,
+			copyFromTimeSlotId: 1
+		});
+		
+		expect(res.status).toBe(409);
+		expectEnvelope(res, false);
+		expect(res.body.message).toMatch(/overlap/i);
+		
+		await noTimeSlotAdded();
+	});
+});
 
 describe("POST /api/timeslots - happy paths", ()=>{
 	it("happy path for option A", async ()=>{

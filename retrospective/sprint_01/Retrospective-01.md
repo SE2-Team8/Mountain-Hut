@@ -87,11 +87,14 @@ RETROSPECTIVE 01 (Team 08)
 
 - Which improvement goals set in the previous retrospective were you able to achieve?
 
-	N/A
+	* To track separately unit, integration and E2E testing
+  * To not try to assign perfectly the tasks right at the beginning
+  * To improve test quality
+  * To prepare better for the demo
   
 - Which ones you were not able to achieve? Why?
 
-	N/A
+	* To reduce task estimation error. We underestimated the amout of work for the first two user stories
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
 

@@ -8,7 +8,7 @@ vi.mock("../../utils/query.js", () => ({
 }));
 
 import { queryAll, queryGet, queryRun } from "../../utils/query.js";
-import { getAllTimeSlots, getTimeSlotByStart, getTimeSlotById, createTimeSlot } from "../../repositories/timeSlotRepository.js";
+import { getAllTimeSlots, getTimeSlotByStart, getTimeSlotById, checkSlotAvailability, createTimeSlot } from "../../repositories/timeSlotRepository.js";
 import { stringISOToDate } from "../../utils/dateTimeFormatter.js";
 
 const rows = [
@@ -21,6 +21,21 @@ const tableList = [
 	{ tableNumber: 1, totalSeats: 2 },
 	{ tableNumber: 2, totalSeats: 17 },
 	{ tableNumber: 4, totalSeats: 3 },
+];
+
+const seededAvailabilitySlot = {
+	timeSlotId: 1,
+	startDateTime: "2027-03-10T12:30:00Z",
+	endDateTime: "2027-03-10T14:30:00Z",
+	freeSeats: 34,
+};
+const seededAvailabilityTables = [
+	{ tableNumber: 2, tableId: 2, totalSeats: 4, freeSeats: 4 },
+	{ tableNumber: 5, tableId: 5, totalSeats: 4, freeSeats: 4 },
+	{ tableNumber: 1, tableId: 1, totalSeats: 6, freeSeats: 6 },
+	{ tableNumber: 3, tableId: 3, totalSeats: 6, freeSeats: 6 },
+	{ tableNumber: 4, tableId: 4, totalSeats: 6, freeSeats: 6 },
+	{ tableNumber: 6, tableId: 6, totalSeats: 8, freeSeats: 8 },
 ];
 
 const writes = (fragment) =>
@@ -104,6 +119,45 @@ describe("getTimeSlotById", () => {
     queryGet.mockResolvedValue(undefined);
     expect(await getTimeSlotById(99)).toBeNull();
   });
+});
+
+describe("checkSlotAvailability", () => {
+	beforeEach(() => {
+		queryGet.mockResolvedValue(seededAvailabilitySlot);
+		queryAll.mockResolvedValue(seededAvailabilityTables);
+	});
+
+	it("assigns a party across the seeded tables and reports the free seat total", async () => {
+		const availability = await checkSlotAvailability(1, 15);
+
+		expect(availability).toEqual({
+			available: true,
+			freeSeats: 34,
+			tables: [
+				{ tableNumber: 2, seatsToTake: 1 },
+				{ tableNumber: 4, seatsToTake: 6 },
+				{ tableNumber: 6, seatsToTake: 8 },
+			],
+		});
+		expect(availability.tables.reduce((sum, table) => sum + table.seatsToTake, 0)).toBe(15);
+	});
+
+	it("returns unavailable when the party is larger than the free seat total", async () => {
+		const availability = await checkSlotAvailability(1, 35);
+
+		expect(availability).toEqual({
+			available: false,
+			freeSeats: 34,
+			tables: [],
+		});
+	});
+
+	it("returns null when the time slot does not exist", async () => {
+		queryGet.mockResolvedValue(undefined);
+
+		await expect(checkSlotAvailability(99, 2)).resolves.toBeNull();
+		expect(queryAll).not.toHaveBeenCalled();
+	});
 });
 
 describe("createTimeSlot", () => {

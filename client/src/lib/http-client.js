@@ -3,7 +3,7 @@ import { redirect } from "react-router";
 import { toast } from "sonner";
 
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_BASE_API,
+    baseURL: "/api",
     withCredentials: true
 });
 

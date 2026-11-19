@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Controller, useForm } from "react-hook-form";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, useSearchParams, Link } from "react-router";
 import * as zod from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../assets/css/auth.css"
@@ -12,6 +12,7 @@ import useUserStore from "@/store/user";
 
 function PageLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setUser =  useUserStore((state)=>
       state.setUser
     )
@@ -34,13 +35,15 @@ function PageLogin() {
     const response = await api.auth.login(data);
     if (response?.success ){
       setUser(response.data);
-      navigate('/', {viewTransition: true});
+      const targetPage = getSafeReturnTo(searchParams.get("returnTo"));
+      navigate(targetPage, { replace: true, viewTransition: true });
     }
   }
 
   return (
     <Card>
       <CardHeader>
+		
         <CardTitle>Login to your account</CardTitle>
         <CardDescription>
           Enter your email below to login to your account
@@ -101,6 +104,20 @@ function PageLogin() {
       </CardContent>
     </Card>
   )
+}
+
+function getSafeReturnTo(returnTo) {
+  if (!returnTo?.startsWith("/") || returnTo.startsWith("//")) return "/";
+
+  try {
+    const target = new URL(returnTo, window.location.origin);
+
+    if (target.origin !== window.location.origin) return "/";
+    
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return "/";
+  }
 }
 
 export default PageLogin;

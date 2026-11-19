@@ -9,18 +9,19 @@
 		{ "url": "http://localhost:3001/api", "description": "Development server" }
 	],
 	"tags": [
+		{ "name": "Auth" },
 		{ "name": "Users" },
 		{ "name": "TimeSlots" },
 		{ "name": "Reservations" }
 	],
 	"paths": {
-		"/users/{id}": {
+		"/users/{userId}": {
 			"get": {
 				"tags": ["Users"],
 				"summary": "Get a user by ID",
 				"description": "Requires an authenticated user with role EMPLOYEE or WARDEN.",
 				"parameters": [
-					{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+					{ "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
 				],
 				"responses": {
 					"200": {
@@ -45,9 +46,9 @@
 				}
 			}
 		},
-		"/sessions": {
+		"/auth/login": {
 			"post": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Log in (create a session)",
 				"description": "Authenticates with email and password using the local strategy. Sets a session cookie on success.",
 				"requestBody": {
@@ -75,9 +76,9 @@
 				}
 			}
 		},
-		"/sessions/current": {
+		"/auth/me": {
 			"get": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Get the currently logged-in user",
 				"security": [{ "cookieAuth": [] }],
 				"responses": {
@@ -99,9 +100,11 @@
 					},
 					"401": { "$ref": "#/components/responses/Unauthorized" }
 				}
-			},
-			"delete": {
-				"tags": ["Users"],
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"tags": ["Auth"],
 				"summary": "Log out (destroy the current session)",
 				"responses": { "200": {
 					"description": "Logout successful",
@@ -122,9 +125,9 @@
 				}
 			}
 		},
-		"/register": {
+		"/auth/register": {
 			"post": {
-				"tags": ["Users"],
+				"tags": ["Auth"],
 				"summary": "Register a new user",
 				"requestBody": {
 					"required": true,
@@ -226,6 +229,37 @@
 				}
 			}
 		},
+		"/timeslots/availability":{
+			"get": {
+				"tags": ["TimeSlots"],
+				"summary": "Get a time slot by a given date, start time and party size",
+				"parameters": [
+					{ "name": "start", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" }, "description": "The start datetime (ISO 8601)"},
+					{ "name": "partySize", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1 }, "description": "The number of people to reserve seats"}
+				],
+				"responses": {
+					"200": {
+						"description": "The matching time slot",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "$ref": "#/components/schemas/TimeSlotAvailable" }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"404": { "$ref": "#/components/responses/NotFound"}
+				}
+			}
+		},
 		"/timeslots/{start}": {
 			"get": {
 				"tags": ["TimeSlots"],
@@ -257,7 +291,7 @@
 				}
 			}
 		},
-		"/timeslots/reservation": {
+		"/reservations": {
 			"post": {
 				"tags": ["Reservations"],
 				"summary": "Create a reservation",
@@ -284,7 +318,96 @@
 						} }
 					},
 					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"404": { "$ref": "#/components/responses/NotFound"},
+					"409": { "$ref": "#/components/responses/Conflict" }
+				}
+			},
+			"get": {
+				"tags": ["Reservations"],
+				"summary": "Get all reservations for a user",
+				"security": [{ "cookieAuth": [] }],
+				"responses": {
+					"200": {
+						"description": "Reservations retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "$ref": "#/components/schemas/ReservationsList"}
+											}
+										}
+									]
+								}
+							}
+						}
+					},
 					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/reservations/{id}": {
+			"get": {
+				"tags": ["Reservations"],
+				"summary": "Get details about one reservation",
+				"security": [{ "cookieAuth": [] }],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}, "description": "The reservation id" }
+				],
+				"responses": {
+					"200": {
+						"description": "Reservation retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Success" },
+										{
+											"type": "object",
+											"properties": {
+												"data": { "$ref": "#/components/schemas/ReservationDetails" }
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			},
+			"put": {
+				"tags": ["Reservations"],
+				"summary": "Update a reservation",
+				"security": [{ "cookieAuth": [] }],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}, "description": "The reservation id" }
+				],
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateReservationRequest" } } }
+				},
+				"responses": {
+					"200": {
+						"description": "Reservation successfully updated",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Success" }
+							}
+						}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" },
+					"409": { "$ref": "#/components/responses/Conflict" }
 				}
 			}
 		}
@@ -330,6 +453,23 @@
 					"totalSeats": { "type": "integer", "minimum": 1 }
 				}
 			},
+			"TableAssignment": {
+				"type": "object",
+				"required": ["tableId", "tableNumber", "occupiedSeats"],
+				"properties": {
+					"tableId": { "type": "integer", "minimum": 1 },
+					"tableNumber": { "type": "integer", "minimum": 1 },
+					"occupiedSeats": { "type": "integer", "minimum": 1 }
+				}
+			},
+			"TableAvailability": {
+				"type": "object",
+				"required": ["tableNumber", "seatsToTake"],
+				"properties": {
+					"tableNumber": { "type": "integer", "minimum": 1 },
+					"seatsToTake": { "type": "integer", "minimum": 1 }
+				}
+			},
 			"TimeSlot": {
 				"type": "object",
 				"required": ["timeSlotId", "startDateTime", "endDateTime", "freeSeats"],
@@ -338,6 +478,16 @@
 					"startDateTime": { "type": "string", "format": "date-time" },
 					"endDateTime": { "type": "string", "format": "date-time" },
 					"freeSeats": { "type": "integer", "minimum": 0 }
+				}
+			},
+			"TimeSlotAvailable": {
+				"type": "object",
+				"required": ["timeSlotId", "available", "freeSeats", "tables"],
+				"properties": {
+					"timeSlotId": { "type": "integer", "minimum": 1 },
+					"available": { "type": "boolean" },
+					"freeSeats": { "type": "integer", "minimum": 0},
+					"tables": { "type": "array", "minItems": 0, "items": { "$ref": "#/components/schemas/TableAvailability" } }
 				}
 			},
 			"CreateTimeSlotWithTables": {
@@ -360,21 +510,67 @@
 			},
 			"CreateReservationRequest": {
 				"type": "object",
-				"required": ["timeSlotId", "partySize"],
+				"required": ["timeSlotId", "partySize", "dietaryRequirements"],
 				"properties": {
 					"timeSlotId": { "type": "integer", "minimum": 1 },
-					"partySize": { "type": "integer", "minimum": 1 }
+					"partySize": { "type": "integer", "minimum": 1 },
+					"dietaryRequirements": {
+						"type": "array",
+						"description": "Allergies and dietary needs for the party. Use an empty array when there are none.",
+						"items": { "$ref": "#/components/schemas/DietaryRequirement" }
+					}
+				}
+			},
+			"DietaryRequirement": {
+				"type": "object",
+				"required": ["allergies", "description"],
+				"properties": {
+					"allergies": { "type": "boolean", "description": "True for an allergy, false for a dietary preference or requirement." },
+					"description": { "type": "string", "minLength": 1, "description": "A description of the allergy or dietary need." }
 				}
 			},
 			"Reservation": {
 				"type": "object",
-				"required": ["reservId", "timeSlotId", "userId", "partySize"],
+				"required": ["reservId", "timeSlotId", "userId", "startDateTime", "endDateTime", "partySize", "dietaryRequirements"],
 				"properties": {
 					"reservId": { "type": "integer", "minimum": 1 },
 					"timeSlotId": { "type": "integer" },
 					"userId": { "type": "integer", "minimum": 1 },
-					"partySize": { "type": "integer" }
+					"startDateTime": { "type": "string", "format": "date-time" },
+					"endDateTime": { "type": "string", "format": "date-time", "description": "Must be after startDateTime" },
+					"partySize": { "type": "integer" },
+					"dietaryRequirements": {
+						"type": "array",
+						"description": "Allergies and dietary needs for the party. Use an empty array when there are none.",
+						"items": { "$ref": "#/components/schemas/DietaryRequirement" }
+					}
 				}
+			},
+			"ReservationDetails": {
+				"type": "object",
+				"required": ["reservId", "timeSlotId", "startDateTime", "endDateTime", "partySize", "dietaryRequirements", "tableAssigements"],
+				"properties": {
+					"reservId": { "type": "integer", "minimum": 1 },
+					"timeSlotId": { "type": "integer" },
+					"startDateTime": { "type": "string", "format": "date-time" },
+					"endDateTime": { "type": "string", "format": "date-time", "description": "Must be after startDateTime" },
+					"partySize": { "type": "integer" },
+					"dietaryRequirements": {
+						"type": "array",
+						"description": "Allergies and dietary needs for the party. Use an empty array when there are none.",
+						"items": { "$ref": "#/components/schemas/DietaryRequirement" }
+					},
+					"tableAssignments": {
+						"type": "array",
+						"description": "Distribution of people across tables",
+						"items": { "$ref": "#/components/schemas/TableAssignment" }
+					}
+				}
+			},
+			"ReservationsList": {
+				"type": "array",
+				"description": "List of reservations",
+				"items": { "$ref": "#/components/schemas/Reservation" }
 			},
 			"Error": {
 				"type": "object",
@@ -418,25 +614,23 @@
 			}
 			},
 			"Forbidden": {
-				"description": "Not authorized (missing required role)",
+				"description": "Not authorized",
 				"content": { "application/json": {
-					"schema": {
-					"allOf": [
-						{ "$ref": "#/components/schemas/Error" },
-						{
-							"type": "object",
-							"properties": {
-								"message": { "enum": ["Forbidden"] }
-							}
-						}
-						]
-					}
+					"schema": { "$ref": "#/components/schemas/Error" }
 				}
 			}
 			},
 			"NotFound": {
 				"description": "Not found",
 				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+			},
+			"Conflict": {
+				"description": "Conflict",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Error" }
+					}
+				}
 			}
 		}
 	}
