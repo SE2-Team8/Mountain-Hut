@@ -13,11 +13,11 @@ import {
 	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, USERS, SLOTS,
 } from "../helpers/helpers.js";
 
-const [S1, S2, S3, S4] = SLOTS;
+const [S1, S2, , S4, S5] = SLOTS;
 const NOW = "2027-03-01T12:00:00Z";
 const HOUR = 3600e3;
 
-let slot1, slot2, slot4;
+let slot1, slot2, slot4, slot5;
 
 const requirement = (description, allergies) => ({ description, allergies });
 
@@ -68,6 +68,7 @@ beforeEach(async () => {
     slot1 = await getTimeSlotId(S1.startISO);
     slot2 = await getTimeSlotId(S2.startISO);
     slot4 = await getTimeSlotId(S4.startISO);
+    slot5 = await getTimeSlotId(S5.startISO);
 });
 afterEach(() => vi.useRealTimers());
 afterAll(() => db.close());
@@ -514,7 +515,83 @@ describe("PUT /api/reservations/:id - time limits", () => {
 
 		expect((await update(agent, reservId, { timeSlotId: slot2, partySize: 2 })).status).toBe(400);
 	});
+
+    it("48 hours rule: a booking whose slot starts in less than 2 hours cannot be moved to a later slot", async () => {
+		const agent = await loginAsRole("hiker");
+		const reservId = await book(agent, { partySize: 2 });
+		sendMail.mockClear();
+		freezeTime(S1.start - 1 * HOUR);
+
+		const res = await update(agent, reservId, { timeSlotId: slot5, partySize: 2 });
+
+		expect(res.status).toBe(400);
+		expect((await getReservations())[0].timeSlotId).toBe(slot1);
+		expect(sendMail).not.toHaveBeenCalled();
+	});
+
+    it("48 hours rule: a booking whose slot is already over cannot be moved to a later slot", async () => {
+		const agent = await loginAsRole("hiker");
+		const reservId = await book(agent, { partySize: 2 });
+		sendMail.mockClear();
+		freezeTime(S1.end + 1 * HOUR);
+
+		const res = await update(agent, reservId, { timeSlotId: slot5, partySize: 2 });
+
+		expect(res.status).toBe(400);
+		expect((await getReservations())[0].timeSlotId).toBe(slot1);
+		expect(sendMail).not.toHaveBeenCalled();
+	});
 });
+
+describe("GET /api/reservations - all the reservations of the logged user", () => {
+    it("200 with only the reservations of the logged user, with their requirements", async () => {
+		const agent = await loginAsRole("hiker");
+		const first = await book(agent, { partySize: 3, dietaryRequirements: [requirement("1 vegan", false)] });
+		const second = await book(agent, { timeSlotId: slot2, partySize: 5 });
+		const others = await book(await loginAsRole("hiker2"), { partySize: 2 });
+
+		const res = await agent.get("/api/reservations");
+
+		expect(res.status).toBe(200);
+		expectEnvelope(res, true);
+		const byId = Object.fromEntries(res.body.data.map((r) => [r.reservId, r]));
+		expect(Object.keys(byId).map(Number).sort()).toEqual([first, second].sort());
+		expect(byId[others]).toBeUndefined();
+		expect(byId[first]).toMatchObject({ timeSlotId: slot1, partySize: 3, dietaryRequirements: [requirement("1 vegan", false)] });
+		expect(byId[second]).toMatchObject({ timeSlotId: slot2, partySize: 5, dietaryRequirements: [] });
+	});
+
+    it("shows the new data of a reservation after an update", async () => {
+		const agent = await loginAsRole("hiker");
+		const reservId = await book(agent, { partySize: 3 });
+		await update(agent, reservId, { timeSlotId: slot2, partySize: 6 }).expect(200);
+
+		const res = await agent.get("/api/reservations");
+
+		expect(res.body.data).toHaveLength(1);
+		expect(res.body.data[0]).toMatchObject({ reservId, timeSlotId: slot2, partySize: 6 });
+	});
+
+    // a user without reservations is not an error: the list is simply empty
+	it("200 with an empty list when the user has no reservations", async () => {
+		await book(await loginAsRole("hiker"));
+
+		const res = await (await loginAsRole("hiker2")).get("/api/reservations");
+
+		expect(res.status).toBe(200);
+		expectEnvelope(res, true);
+		expect(res.body.data).toEqual([]);
+	});
+
+    it("401 without a session", async () => {
+		await book(await loginAsRole("hiker"));
+
+		const res = await request(app).get("/api/reservations");
+
+		expect(res.status).toBe(401);
+		expectEnvelope(res, false);
+	});
+})
 
 describe("PUT /api/reservations/:id - email notification", () => {
     const sentMail = () => sendMail.mock.calls[0][0];
