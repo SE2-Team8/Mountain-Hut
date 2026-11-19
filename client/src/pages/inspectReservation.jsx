@@ -139,7 +139,6 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
 
 	const newReservation = {
 		timeSlotId: values.timeSlotId,
-		reservId: reservation.reservId,
 		partySize: values.partySize,
 		dietaryRequirements: values.dietaryRequirements.map((req) => requirementItemToObj(req)),
 	}
@@ -222,7 +221,7 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
             <Field>
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <FieldLabel>Available times</FieldLabel>
+                  <FieldLabel>Available slots</FieldLabel>
                 </div>
               </div>
 
