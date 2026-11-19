@@ -8,7 +8,7 @@ vi.mock("../../utils/query.js", () => ({
 }));
 
 import { queryAll, queryGet, queryRun } from "../../utils/query.js";
-import { createReservation } from "../../repositories/reservationRepository.js";
+import { createReservation, updateReservation } from "../../repositories/reservationRepository.js";
 
 const TIME_SLOT_ID = 10;
 const USER_ID = 1;
@@ -175,6 +175,85 @@ describe("createReservation - errors", () => {
     queryAll.mockRejectedValue(new Error("db down"));
 
     await expect(createReservation(USER_ID, TIME_SLOT_ID, 2)).rejects.toThrow("db down");
+  });
+});
+
+describe("updateReservation - unchanged seating", () => {
+  it("updates dietary requirements without changing table assignments when slot and party size stay the same", async () => {
+    const requirements = [{ description: "Vegan", allergies: false }];
+    queryGet.mockResolvedValue({ timeSlotId: TIME_SLOT_ID, partySize: 4 });
+
+    const reservId = await updateReservation(42, TIME_SLOT_ID, 4, requirements);
+
+    expect(reservId).toBe(42);
+    expect(queryAll).not.toHaveBeenCalled();
+    expect(queryRun).toHaveBeenCalledTimes(1);
+    expect(queryRun.mock.calls[0][0]).toContain("UPDATE reservations");
+    expect(queryRun.mock.calls[0][1]).toEqual([
+      TIME_SLOT_ID,
+      4,
+      JSON.stringify(requirements),
+      42,
+    ]);
+  });
+});
+
+describe("updateReservation - seating changes", () => {
+  it("releases old seats and assigns new tables when moving to another slot", async () => {
+    const requirements = [{ description: "No nuts", allergies: true }];
+    queryGet.mockResolvedValue({ timeSlotId: TIME_SLOT_ID, partySize: 4 });
+    queryAll
+      .mockResolvedValueOnce([{ tableId: 1, occupiedSeats: 4 }])
+      .mockResolvedValueOnce([table(2, 5), table(3, 8)]);
+
+    const reservId = await updateReservation(42, 20, 6, requirements);
+
+    expect(reservId).toBe(42);
+    expect(queryAll).toHaveBeenCalledTimes(2);
+    expect(queryAll.mock.calls[1][1]).toEqual([20]);
+    expect(seatUpdates()).toEqual([
+      { id: 1, seats: 4 },
+      { id: 3, seats: 6 },
+    ]);
+    expect(writes("DELETE FROM tableAssignments")[0][1]).toEqual([42]);
+    expect(assignments()).toEqual([{ tableId: 3, reservId: 42, seats: 6 }]);
+    expect(writes("UPDATE reservations")[0][1]).toEqual([
+      20,
+      6,
+      JSON.stringify(requirements),
+      42,
+    ]);
+  });
+
+  it("rejects a party that cannot fit and does not update the reservation row", async () => {
+    queryGet.mockResolvedValue({ timeSlotId: TIME_SLOT_ID, partySize: 4 });
+    queryAll
+      .mockResolvedValueOnce([{ tableId: 1, occupiedSeats: 4 }])
+      .mockResolvedValueOnce([table(2, 3)]);
+
+    await expect(updateReservation(42, 20, 5, [])).rejects.toThrow(
+      "Not enough free seats to change the reservation",
+    );
+
+    expect(writes("UPDATE reservations")).toHaveLength(0);
+    expect(assignments()).toHaveLength(0);
+  });
+});
+
+describe("updateReservation - errors", () => {
+  it("rejects when the reservation does not exist", async () => {
+    queryGet.mockResolvedValue(null);
+
+    await expect(updateReservation(42, 20, 4, [])).rejects.toThrow("Reservation not found");
+
+    expect(queryAll).not.toHaveBeenCalled();
+    expect(queryRun).not.toHaveBeenCalled();
+  });
+
+  it("propagates database errors", async () => {
+    queryGet.mockRejectedValue(new Error("database unavailable"));
+
+    await expect(updateReservation(42, 20, 4, [])).rejects.toThrow("database unavailable");
   });
 });
 

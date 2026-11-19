@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../../repositories/reservationRepository.js", () => ({
   createReservation: vi.fn(),
+  getReservationById: vi.fn(),
   getReservationsByUser: vi.fn(),
+  updateReservation: vi.fn(),
 }));
 vi.mock("../../repositories/timeSlotRepository.js", () => ({
   getTimeSlotById: vi.fn(),
@@ -15,7 +17,12 @@ vi.mock("../../utils/dateTimeFormatter.js", () => ({
   formatDateTime: vi.fn(),
 }));
 
-import { createReservation, getReservationsByUser } from "../../repositories/reservationRepository.js";
+import {
+  createReservation,
+  getReservationById,
+  getReservationsByUser,
+  updateReservation,
+} from "../../repositories/reservationRepository.js";
 import { getTimeSlotById } from "../../repositories/timeSlotRepository.js";
 import { responseSuccess, responseError } from "../../utils/response.js";
 import reservationController from "../../controllers/reservationController.js";
@@ -27,15 +34,33 @@ const HOUR = 3600e3;
 const res = {};
 const SESSION_USER = { userId: 7, role: "HIKER", fullName: "Mario Rossi", email: "hiker@example.com" };
 const callControllerCreate = (body, user = SESSION_USER) => reservationController.create({ user, body }, res);
+const callControllerUpdate = (body, user = SESSION_USER, id = 42) => reservationController.update({ params: { id: String(id) }, user, body }, res);
 const slotStartingIn = (ms) => ({ timeSlotId: 1, startDateTime: new Date(NOW.getTime() + ms), endDateTime: new Date(NOW.getTime() + 2 * ms) });
+const updateBody = (overrides = {}) => ({ timeSlotId: 2, partySize: 6, dietaryRequirements: [], ...overrides });
+const updateSlot = (ms, overrides = {}) => ({
+  timeSlotId: 2,
+  startDateTime: new Date(NOW.getTime() + ms),
+  endDateTime: new Date(NOW.getTime() + ms + 2 * HOUR),
+  freeSeats: 10,
+  ...overrides,
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
   getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
+  getReservationById.mockResolvedValue({
+    reservId: 42,
+    userId: SESSION_USER.userId,
+    timeSlotId: 1,
+    partySize: 4,
+    startDateTime: new Date(NOW.getTime() + 72 * HOUR),
+  });
   getReservationsByUser.mockResolvedValue([]);
   createReservation.mockResolvedValue(42);
+  updateReservation.mockResolvedValue(42);
+  sendTemplateEmail.mockResolvedValue(undefined);
   formatDateTime.mockReturnValue("formatted-date-string");
 });
 afterEach(() => vi.useRealTimers());
@@ -182,5 +207,189 @@ describe("reservationController.create - email notification", () => {
     await expect(callControllerCreate({ timeSlotId: 1, partySize: 4, allergies: false, dietaryRequirements: [] })).rejects.toThrow("SMTP server down");
     
     expect(responseSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("reservationController.update - success", () => {
+  it("updates the reservation and emails the owner with the updated details", async () => {
+    const dietaryRequirements = [
+      { description: "No nuts", allergies: true },
+      { description: "Vegan", allergies: false },
+    ];
+    getTimeSlotById.mockResolvedValue(updateSlot(96 * HOUR));
+    formatDateTime
+      .mockReturnValueOnce("10-03-2027 10:00")
+      .mockReturnValueOnce("10-03-2027 12:00");
+
+    await callControllerUpdate(updateBody({ partySize: 6, dietaryRequirements }));
+
+    expect(getReservationById).toHaveBeenCalledWith(42);
+    expect(getTimeSlotById).toHaveBeenCalledWith(2);
+    expect(getReservationsByUser).toHaveBeenCalledWith(7, 2);
+    expect(updateReservation).toHaveBeenCalledWith(42, 2, 6, dietaryRequirements);
+    expect(sendTemplateEmail).toHaveBeenCalledWith({
+      to: "hiker@example.com",
+      subject: "Reservation Updated",
+      templateName: "reservation-update",
+      data: {
+        user: { fullName: "Mario Rossi" },
+        reservation: {
+          reservId: 42,
+          userId: 7,
+          timeSlotId: 2,
+          partySize: 6,
+          allergies: "Yes",
+          dietaryRequirements: "No nuts (Allergy), Vegan (Diet)",
+        },
+        timeSlot: {
+          timeSlotId: 2,
+          startDateTime: "10-03-2027 10:00",
+          endDateTime: "10-03-2027 12:00",
+        },
+      },
+      text: "Your reservation has been updated.",
+    });
+    expect(responseSuccess).toHaveBeenCalledWith(res, null, "Reservation successfully updated");
+  });
+});
+
+describe("reservationController.update - validation", () => {
+  it("returns 404 when the reservation does not exist", async () => {
+    getReservationById.mockResolvedValue(null);
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "Reservation 42 not found", 404);
+    expect(getTimeSlotById).not.toHaveBeenCalled();
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when the reservation belongs to another user", async () => {
+    getReservationById.mockResolvedValue({ userId: 99 });
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "You cannot update another user's reservation", 403);
+    expect(getTimeSlotById).not.toHaveBeenCalled();
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the requested time slot does not exist", async () => {
+    getTimeSlotById.mockResolvedValue(null);
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "Time slot with timeSlotId=2 not found", 404);
+    expect(getReservationsByUser).not.toHaveBeenCalled();
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("rejects a new time slot less than two hours away", async () => {
+    getTimeSlotById.mockResolvedValue(updateSlot(2 * HOUR - 1));
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(
+      res,
+      null,
+      "Reservation has to be updated at least 2 hours before the new slot.",
+      400,
+    );
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("rejects an update less than 48 hours before the original slot", async () => {
+    getReservationById.mockResolvedValue({
+      reservId: 42,
+      userId: SESSION_USER.userId,
+      startDateTime: new Date(NOW.getTime() + 48 * HOUR - 1),
+    });
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(
+      res,
+      null,
+      "Reservation has to be updated at least 48 hours before the slot.",
+      400,
+    );
+    expect(getReservationsByUser).not.toHaveBeenCalled();
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("rejects a time slot already reserved by the same user", async () => {
+    getReservationsByUser.mockResolvedValue([{ reservId: 42 }, { reservId: 43 }]);
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "Reservation for that time slot already exists", 409);
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("counts the reservation's current seats when keeping its time slot", async () => {
+    getReservationById.mockResolvedValue({
+      reservId: 42,
+      userId: SESSION_USER.userId,
+      timeSlotId: 2,
+      partySize: 4,
+      startDateTime: new Date(NOW.getTime() + 72 * HOUR),
+    });
+    getReservationsByUser.mockResolvedValue([{ reservId: 42 }]);
+    getTimeSlotById.mockResolvedValue(updateSlot(96 * HOUR, { freeSeats: 0 }));
+
+    await callControllerUpdate(updateBody({ timeSlotId: 2, partySize: 4 }));
+
+    expect(updateReservation).toHaveBeenCalledWith(42, 2, 4, []);
+    expect(responseSuccess).toHaveBeenCalled();
+    expect(responseError).not.toHaveBeenCalled();
+  });
+
+  it("rejects a party larger than the available seats", async () => {
+    getTimeSlotById.mockResolvedValue(updateSlot(96 * HOUR, { freeSeats: 5 }));
+
+    await callControllerUpdate(updateBody({ partySize: 6 }));
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "Not enough free seats", 400);
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("accepts updates exactly two hours before the new slot and 48 hours before the original slot", async () => {
+    getReservationById.mockResolvedValue({
+      reservId: 42,
+      userId: SESSION_USER.userId,
+      timeSlotId: 2,
+      partySize: 4,
+      startDateTime: new Date(NOW.getTime() + 48 * HOUR),
+    });
+    getReservationsByUser.mockResolvedValue([{ reservId: 42 }]);
+    getTimeSlotById.mockResolvedValue(updateSlot(2 * HOUR, { freeSeats: 4 }));
+
+    await callControllerUpdate(updateBody({ timeSlotId: 2, partySize: 4 }));
+
+    expect(updateReservation).toHaveBeenCalledWith(42, 2, 4, []);
+    expect(responseSuccess).toHaveBeenCalled();
+    expect(responseError).not.toHaveBeenCalled();
+  });
+});
+
+describe("reservationController.update - repository errors", () => {
+  it("maps the repository's insufficient-seat error to a 400 response", async () => {
+    getTimeSlotById.mockResolvedValue(updateSlot(96 * HOUR));
+    updateReservation.mockRejectedValue(new Error("Not enough free seats to change the reservation"));
+
+    await callControllerUpdate(updateBody());
+
+    expect(responseError).toHaveBeenCalledWith(res, null, "Not enough free seats", 400);
+    expect(responseSuccess).not.toHaveBeenCalled();
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
+  });
+
+  it("propagates other repository errors", async () => {
+    getTimeSlotById.mockResolvedValue(updateSlot(96 * HOUR));
+    updateReservation.mockRejectedValue(new Error("database unavailable"));
+
+    await expect(callControllerUpdate(updateBody())).rejects.toThrow("database unavailable");
+    expect(responseSuccess).not.toHaveBeenCalled();
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
   });
 });
