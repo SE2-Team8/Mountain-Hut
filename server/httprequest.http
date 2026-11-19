@@ -50,3 +50,5 @@ content-Type: application/json
 ### 
 GET http://localhost:3001/api/timeslots/availability?start=2027-03-10T12:30:00.000Z&partySize=10
 
+###
+GET http://localhost:3001/api/reservations/

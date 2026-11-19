@@ -24,6 +24,8 @@ router.get('/:id', isAuthenticated,
     ]),
     wrapController(reservationController.retrieve));
 
+router.get('/', isAuthenticated,
+    wrapController(reservationController.retrieveAll));
 
 router.put('/:id', isAuthenticated,
     checkBodyLength(3),

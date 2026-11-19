@@ -81,6 +81,13 @@ const reservationController = {
 		return responseSuccess(res, data, "Reservation retrieved");
 	},
 
+	retrieveAll: async (req, res) => {
+		const reservations = await getReservationsByUser(req.user.userId);
+		if (!reservations || reservations.length === 0)
+			return responseError(res, null, "No reservations found for this user", 404);
+		return responseSuccess(res, reservations, "Reservations retrieved");
+	},
+
 	update: async (req, res) => {
 		const reservId = Number(req.params.id);
 		const { timeSlotId, partySize, dietaryRequirements } = req.body;
