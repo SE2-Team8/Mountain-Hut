@@ -58,7 +58,7 @@ function PageIndex() {
                             <Link to="/availability" viewTransition><Search />Check availability</Link>
                         </Button>
                         <Button size="lg" variant="secondary" className={heroButton} asChild>
-                            <Link to="/reservations" viewTransition><CalendarCheck />Book a table</Link>
+                            <Link to="/reservations/new" viewTransition><CalendarCheck />Book a table</Link>
                         </Button>
                         {!user && (
                             <Button size="lg" variant="outline" className={heroButton} asChild>

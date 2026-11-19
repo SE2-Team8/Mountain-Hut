@@ -279,7 +279,7 @@ function PageAvailability() {
 
                   <Button asChild type="submit" size="lg" className="w-full rounded-xl mt-4" disabled={formState.isSubmitting}>
                     <Link
-                      to={`/reservations?${new URLSearchParams({
+                      to={`/reservations/new?${new URLSearchParams({
                         start: result.startDateTime,
                         timeSlotId: String(result.timeSlotId),
                         partySize: String(result.partySize),

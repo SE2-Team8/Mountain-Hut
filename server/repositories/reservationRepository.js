@@ -47,8 +47,10 @@ async function getReservationById(reservId) {
 // returns an array of reservations for a specific userId. This method can also filter by timeSlotId, if specified
 async function getReservationsByUser(userId, timeSlotId = null) {
 	let reservRows = await queryAll(
-		`SELECT * FROM reservations
-		WHERE userId = ?`, [userId]
+		`SELECT reservations.*, timeSlots.startDateTime, timeSlots.endDateTime
+		FROM reservations JOIN timeSlots ON reservations.timeSlotId = timeSlots.timeSlotId
+		WHERE reservations.userId = ?
+		ORDER BY timeSlots.startDateTime ASC`, [userId]
 	);
 
 	if (!reservRows)
@@ -62,7 +64,9 @@ async function getReservationsByUser(userId, timeSlotId = null) {
 		row.timeSlotId,
 		row.userId,
 		row.partySize,
-		JSON.parse(row.dietaryRequirements)
+		JSON.parse(row.dietaryRequirements),
+		stringISOToDate(row.startDateTime),
+		stringISOToDate(row.endDateTime)
 	));
 }
 

@@ -4,7 +4,8 @@ import LayoutError from "@/layouts/error";
 import PageIndex from "@/pages";
 import Page404 from "@/pages/404";
 import PageLogin from "@/pages/login";
-import PageReservations from "@/pages/reservations";
+import PageCreateReservation from "@/pages/createReservation";
+import PageMyReservations from "@/pages/reservations";
 import PageCapacity from "@/pages/capacity";
 import PageAvailability from "@/pages/availability";
 import PageSignUp from "@/pages/signup";
@@ -37,7 +38,12 @@ const router = createBrowserRouter([
             },
             {
                 path: 'reservations',
-                Component: PageReservations,
+                Component: PageMyReservations,
+                middleware: [auth],
+            },
+            {
+                path: 'reservations/new',
+                Component: PageCreateReservation,
                 middleware: [auth],
             },
             {
