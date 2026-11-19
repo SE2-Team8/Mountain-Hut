@@ -75,6 +75,7 @@ const reservationController = {
 			endDateTime: reservation.endDateTime,
 			partySize: reservation.partySize,
 			dietaryRequirements: reservation.dietaryRequirements,
+			tableAssignments: reservation.tableAssignments,
 		};
 
 		return responseSuccess(res, data, "Reservation retrieved");
