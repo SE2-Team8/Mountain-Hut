@@ -104,11 +104,13 @@ body {
 
 input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 input[type="number"]:enabled:hover,
 input[type="number"]:enabled:focus {
-  -moz-appearance: auto;
+  -moz-appearance: number-input;
+  appearance: auto;
 }
 .dark body {
   --veil: rgba(20, 22, 20, 0.78);
