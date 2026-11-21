@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowRight, CalendarCheck, ClipboardList, LogIn, Search, Users, Utensils } from "lucide-react";
+import { ArrowRight, CalendarCheck, ClipboardList, LogIn, MapPin, Mountain, Phone, Route, Search, Users, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useUserStore from "@/store/user";
@@ -29,6 +29,38 @@ const STAFF_ACTIONS = [
         icon: ClipboardList,
         title: "Define time slots & tables",
         text: "Create a service slot and set its tables and seats, or copy the setup of a previous slot.",
+    },
+];
+
+const HUT_INFO = [
+    {
+        icon: Mountain,
+        title: "About the hut",
+        text: "Here you can rest and enjoy a heartwarming meal before packing up for your next adventure. You can find a car park in the back as well as e-bike charging stations.",
+    },
+    {
+        icon: MapPin,
+        secondaryIcon: Phone,
+        title: "Location & Contact",
+        text: (
+            <>
+                90, Sunny Street - Oakridge - Italy
+                <br />
+                +39 12345678
+                <br />
+                Call us all week from 9.00 AM to 5.00 PM
+            </>
+        ),
+    },
+    {
+        icon: Route,
+        title: "How to get here",
+        text: "Take the highway towards Saltmere and take the first exit at 8.00 Km",
+    },
+    {
+        icon: Search,
+        title: "Points of interest",
+        text: "From me you can reach Major Waterfall and the Old Mill.",
     },
 ];
 
@@ -97,6 +129,29 @@ function PageIndex() {
                             </CardHeader>
                         </Card>
                     ))}
+                </section>
+            )}
+
+            {!isStaff && (
+                <section className="space-y-5">
+                    <div className="text-center">
+                        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Discover the hut</h2>
+                        <p className="mt-2 text-muted-foreground">Plan your visit and explore the surrounding area.</p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {HUT_INFO.map(({ icon: Icon, secondaryIcon: SecondaryIcon, title, text }) => (
+                            <Card key={title}>
+                                <CardHeader>
+                                    <div className="mb-2 flex items-center gap-2 text-primary">
+                                        <Icon className="size-6" aria-hidden="true" />
+                                        {SecondaryIcon && <SecondaryIcon className="size-6" aria-hidden="true" />}
+                                    </div>
+                                    <CardTitle>{title}</CardTitle>
+                                    <CardDescription>{text}</CardDescription>
+                                </CardHeader>
+                            </Card>
+                        ))}
+                    </div>
                 </section>
             )}
         </div>
