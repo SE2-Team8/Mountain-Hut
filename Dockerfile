@@ -6,13 +6,13 @@ RUN apt-get update \
 
 WORKDIR /app/server
 COPY server/package*.json ./
-RUN npm_config_build_from_source=sqlite3 npm ci --omit=dev
+RUN npm ci --ignore-scripts --omit=dev && npm_config_build_from_source=sqlite3 npm rebuild sqlite3
 
 FROM node:24.13.1-bookworm-slim AS client-build
 
 WORKDIR /app/client
 COPY client/package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY client/ ./
 RUN npm run build

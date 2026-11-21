@@ -111,7 +111,7 @@ function ReservationEditForm({ reservation, onCancel, onSuccess }) {
       }
     };
 
-    if (selectedDate >= todayISO()) getAvailableTimeslots();
+    if (selectedDate >= todayISO()) getAvailableTimeslots().catch((e) => { console.error("Failed to fetch timeslots: ", e) });
   }, [selectedDate]);
 
   function handleSelectSlot(slot, field) {

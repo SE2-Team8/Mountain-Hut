@@ -7,7 +7,7 @@ import { dateToStringISO } from "../utils/dateTimeFormatter.js";
 // user seeding
 const users = [
     {
-		password: 'strong_password',
+		password: process.env.SEED_USER_PWD,
 		role: 'WARDEN',
 		fullName: 'Marco Verdi',
 		email: 'marco.verdi@gmail.com',
@@ -16,7 +16,7 @@ const users = [
 		emergencyContact: null
 	},
 	{
-		password: 'weak_password',
+		password: process.env.SEED_USER_PWD,
 		role: 'EMPLOYEE',
 		fullName: 'Luigi Rossi',
 		email: 'luigi.rossi@libero.it',
@@ -25,7 +25,7 @@ const users = [
 		emergencyContact: null
 	},
 	{
-		password: 'iLoveHuts',
+		password: process.env.SEED_USER_PWD,
 		role: 'HIKER',
 		fullName: 'Mario Rossi',
 		email: 'r0ssi.mari0.se2.1998@gmail.com',
@@ -34,7 +34,7 @@ const users = [
 		emergencyContact: '+39 8765432109'
 	},
 	{
-		password: 'libellula',
+		password: process.env.SEED_USER_PWD,
 		role: 'HIKER',
 		fullName: 'Giovanni Muciaccia',
 		email: 'gio.ilMucia@gmail.com',

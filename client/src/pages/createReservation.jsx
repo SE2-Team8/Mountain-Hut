@@ -153,7 +153,7 @@ function PageCreateReservation() {
   const partySize = Number(useWatch({ control, name: "partySize" }));
   const dietaryRequirements = useWatch({ control, name: "dietaryRequirements" });
   const dateKey = date;
-  const dateIsValid = date && !isNaN(new Date(date).getTime());
+  const dateIsValid = date && !Number.isNaN(new Date(date).getTime());
   const dayAvailability = availability.rangeKey === dateKey ? availability : null;
   const slots = dayAvailability?.slots ?? EMPTY_SLOTS;
   const availabilityError = dayAvailability?.error ?? false;
@@ -200,8 +200,8 @@ function PageCreateReservation() {
     if (dateIsValid) {
       let active = true;
       Promise.resolve().then(() => {
-        if (active) fetchAvailability(date, () => active);
-      });
+        if (active) return fetchAvailability(date, () => active);
+      }).catch((e) => { console.error("Failed to fetch availability: ", e) });
 
       return () => {
         active = false;

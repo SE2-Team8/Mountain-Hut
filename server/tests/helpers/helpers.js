@@ -9,10 +9,10 @@ import { createDBTables, deleteDBData } from "../../database/migration.js";
 
 
 export const USERS = {
-	warden: { password: "strong_password", role: "WARDEN", fullName: "Mario Rossi", email: "mario.rossi@gmail.com", phoneNumber: "+39 1234567890", notes: null, emergencyContact: null },
-	employee: { password: "weak_password", role: "EMPLOYEE", fullName: "Luigi Rossi", email: "luigi.rossi@libero.it", phoneNumber: "+39 2345678901", notes: null, emergencyContact: null },
-	hiker: { password: "iLoveHuts", role: "HIKER", fullName: "Paola Bianchi", email: "funnyhiker.82@gmail.com", phoneNumber: "+39 9876543210", notes: "registered mountain guide", emergencyContact: "+39 8765432109" },
-	hiker2: { password: "libellula", role: "HIKER", fullName: "Giovanni Muciaccia", email: "gio.ilMucia@gmail.com", phoneNumber: "+39 1212121212", notes: null, emergencyContact: "+39 9876543210" },
+	warden: { password: process.env.SEED_USER_PWD, role: "WARDEN", fullName: "Mario Rossi", email: "mario.rossi@gmail.com", phoneNumber: "+39 1234567890", notes: null, emergencyContact: null },
+	employee: { password: process.env.SEED_USER_PWD, role: "EMPLOYEE", fullName: "Luigi Rossi", email: "luigi.rossi@libero.it", phoneNumber: "+39 2345678901", notes: null, emergencyContact: null },
+	hiker: { password: process.env.SEED_USER_PWD, role: "HIKER", fullName: "Paola Bianchi", email: "funnyhiker.82@gmail.com", phoneNumber: "+39 9876543210", notes: "registered mountain guide", emergencyContact: "+39 8765432109" },
+	hiker2: { password: process.env.SEED_USER_PWD, role: "HIKER", fullName: "Giovanni Muciaccia", email: "gio.ilMucia@gmail.com", phoneNumber: "+39 1212121212", notes: null, emergencyContact: "+39 9876543210" },
 };
 
 const TABLE_LIST_1 = [6, 4, 6, 6, 4, 8]; 

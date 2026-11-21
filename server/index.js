@@ -11,6 +11,15 @@ import passportConfig from "./config/passportConfig.js";
 const app = express();
 const port = 3001;
 
+const clientDist = process.env.CLIENT_DIST || path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../client/dist"
+  );
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(clientDist));
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -23,12 +32,6 @@ app.use('/api', router);
 app.use(exceptionHandler);
 
 if (process.env.NODE_ENV === "production") {
-  const clientDist = process.env.CLIENT_DIST || path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../client/dist"
-  );
-
-  app.use(express.static(clientDist));
   app.use((request, response, next) => {
     if (
       request.method !== "GET" ||

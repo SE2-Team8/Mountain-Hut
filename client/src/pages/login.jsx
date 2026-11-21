@@ -17,7 +17,7 @@ function PageLogin() {
       state.setUser
     )
   const formSchema = zod.object({
-    username: zod.string().nonempty("Email is required"),
+    //username: zod.string().nonempty("Email is required"),
     username: zod.email("Invalid Email"),
     password: zod.string().nonempty("Password is required")
   });

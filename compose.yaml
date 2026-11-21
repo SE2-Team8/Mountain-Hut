@@ -9,6 +9,7 @@ services:
     environment:
       NODE_ENV: production
       DB_CONNECTION: /data/mountain-hut.sqlite
+      SEED_USER_PWD: libellula
     volumes:
       - mountain-hut-data:/data
     ports:
