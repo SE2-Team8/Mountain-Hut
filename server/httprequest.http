@@ -5,6 +5,15 @@ content-type: application/json
     "username": "r0ssi.mari0.se2.1998@gmail.com",
     "password": "iLoveHuts"
 }
+
+###
+POST http://localhost:3001/api/auth/login
+content-type: application/json
+
+{
+    "username": "luigi.rossi@libero.it",
+    "password": "weak_password"
+}
 ###
 GET http://localhost:3001/api/auth/me
 
@@ -52,3 +61,6 @@ GET http://localhost:3001/api/timeslots/availability?start=2027-03-10T12:30:00.0
 
 ###
 GET http://localhost:3001/api/reservations/
+
+###
+GET http://localhost:3001/api/users/search?value=@
