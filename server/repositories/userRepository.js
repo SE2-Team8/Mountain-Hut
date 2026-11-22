@@ -53,14 +53,15 @@ async function getUserFromCredentials(email, password) {
 
 // creates a user and returns the new user id, throws an error if
 // a user with the same email already exists
-async function createUser(role, password, fullName, email, phoneNumber, notes = null, emergencyContact = null) {
+async function createUser(role, fullName, email, phoneNumber, notes = null, emergencyContact = null, password = null) {
     const existingUser = await queryGet('SELECT * FROM users WHERE email = ?', [email]);
 
     if (existingUser)
 		throw new Error("User with the same email already exists!");
 
+	const finalPwd = password?.trim() || crypto.randomBytes(8).toString("hex");
 	const salt = crypto.randomBytes(SALT_LEN).toString('hex');
-	const hashedPassword = crypto.scryptSync(password, salt, PWD_HASH_LEN).toString('hex');
+	const hashedPassword = crypto.scryptSync(finalPwd, salt, PWD_HASH_LEN).toString('hex');
     
 	const queryRes = await queryRun(
 		`INSERT INTO users 
@@ -74,8 +75,8 @@ async function createUser(role, password, fullName, email, phoneNumber, notes = 
 
 // creates a hiker and returns the new user id, throws an error if
 // a user with the same email already exists
-async function createHiker(password, fullName, email, phoneNumber, notes=null, emergencyContact=null) {
-	return await createUser("HIKER", password, fullName, email, phoneNumber, notes, emergencyContact);
+async function createHiker(fullName, email, phoneNumber, notes=null, emergencyContact=null, password = null) {
+	return await createUser("HIKER", fullName, email, phoneNumber, notes, emergencyContact, password);
 }
 
 // for future use

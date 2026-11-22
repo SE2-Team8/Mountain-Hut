@@ -9,7 +9,7 @@ const authController = {
 		if (existingUser != null)
 			return responseError(res, null, "Another user with this email is already registered", 409);
 
-        const newUserId = await createHiker(password, fullName, email, phone, notes, emergencyContact);
+        const newUserId = await createHiker(fullName, email, phone, notes?.trim() || null, emergencyContact?.trim() || null, password);
         const newUser = await getUserById(newUserId);
 
         req.login(newUser, (err) => {

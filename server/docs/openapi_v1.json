@@ -202,6 +202,7 @@
 			"post": {
 				"tags": ["Users"],
 				"summary": "Create a new user",
+				"security": [{ "cookieAuth": [] }],
 				"requestBody": {
 					"required": true,
 					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateUserRequest" } } }
@@ -224,6 +225,8 @@
 						} }
 					},
 					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
 					"409": { "description": "Email already registered" }
 				}
 			}
