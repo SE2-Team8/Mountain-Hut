@@ -1,8 +1,15 @@
-import { getUser } from "../services/userService.js";
+import { getUser, searchHikers } from "../services/userService.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 import { createHiker, getUserFromEmail, getUserById } from "../repositories/userRepository.js";
 
 const userController = {
+    
+    searchHikers: async (req, res) => {
+        const hikers = await searchHikers(req.query.value);
+
+        return responseSuccess(res, hikers, "Hikers retrieved");
+    },
+
     get: async (req, res) => {
         const user = await getUser(req.params.userId);
 
@@ -24,6 +31,7 @@ const userController = {
 
         return responseSuccess(res, newUser, "User succesfully registered", 201);
     }
+
 };
 
 export default userController;

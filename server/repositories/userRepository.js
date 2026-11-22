@@ -1,4 +1,4 @@
-import { queryGet, queryRun } from "../utils/query.js";
+import { queryAll, queryGet, queryRun } from "../utils/query.js";
 import crypto from "crypto";
 
 const PWD_HASH_LEN = 64;
@@ -31,6 +31,17 @@ async function getUserFromEmail(email) {
 
 	return new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
 		userRow.phoneNumber, userRow.notes, userRow.emergencyContact)
+}
+// retrieve a user by email or phone number or name
+// at the moment the query returns all information about the user but i'm not sure if everything is needed
+async function getHikerbyEmOrPhoneOrName(value) {
+	const userRows = await queryAll(
+		'SELECT * FROM users WHERE role = ? AND (email LIKE ? OR phoneNumber LIKE ? OR fullName LIKE ?) ORDER BY fullName',
+		["HIKER", `%${value}%`, `%${value}%`, `%${value}%`]
+	);
+
+	return userRows.map(userRow => new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
+		userRow.phoneNumber, userRow.notes, userRow.emergencyContact));
 }
 
 // retrieves a user from the given credentials (returns null if not found or credentials are wrong)
@@ -79,6 +90,9 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 	return await createUser("HIKER", fullName, email, phoneNumber, notes, emergencyContact, password);
 }
 
+
+// 
+
 // for future use
 // // creates a warden and returns the new user id, throws an error if
 // // a user with the same email already exists
@@ -93,4 +107,4 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 // }
 
 
-export { User, getUserById, getUserFromEmail, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
+export { User, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
