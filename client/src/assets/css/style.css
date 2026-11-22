@@ -47,6 +47,7 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: #f4efe6;
   --foreground: #1f3a33;
@@ -69,6 +70,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #16241f;
   --foreground: #f4efe6;
   --card: #1f3a33;
@@ -100,6 +102,14 @@ body {
   min-height: 100vh
 }
 
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]:enabled:hover,
+input[type="number"]:enabled:focus {
+  appearance: auto;
+}
 .dark body {
   --veil: rgba(20, 22, 20, 0.78);
 }

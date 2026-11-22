@@ -39,7 +39,7 @@ function PageAvailability() {
   const date = useWatch({ control, name: "date" });
   const timeSlotId = useWatch({ control, name: "timeSlotId" });
   const slots = dayAvailability.slots ?? [];
-  const dateIsValid = date && !isNaN(new Date(date).getTime());
+  const dateIsValid = date && !Number.isNaN(new Date(date).getTime());
 
   const fetchAvailability = useCallback(async (selectedDate, isCurrent = () => true) => {
     setLoadingSlots(true);
