@@ -15,8 +15,8 @@ router.post('/', isAuthenticated,
         body('dietaryRequirements').exists().withMessage('dietaryRequirements is required').isArray().withMessage('dietaryRequirements must be an array'),
         body('dietaryRequirements.*.allergies').exists().withMessage('allergies is required').isBoolean().withMessage('allergies must be a boolean'),
         body('dietaryRequirements.*.description').exists().withMessage('description is required').isString().withMessage('description must be a string').trim().notEmpty().withMessage('description cannot be empty'),
-        body('tmpHikerName').isString().withMessage('temporary hiker name must be a string').trim().notEmpty().withMessage('temporary hiker name cannot be empty when specified'),
-        body('tmpHikerPhone').isString().withMessage('temporary hiker phone must be a string').trim().notEmpty().withMessage('temporary hiker phone cannot be empty when specified')
+        body('tmpHikerName').optional().isString().withMessage('temporary hiker name must be a string').trim().notEmpty().withMessage('temporary hiker name cannot be empty when specified'),
+        body('tmpHikerPhone').optional().isString().withMessage('temporary hiker phone must be a string').trim().notEmpty().withMessage('temporary hiker phone cannot be empty when specified')
     ]),
     wrapController(reservationController.create));
 
