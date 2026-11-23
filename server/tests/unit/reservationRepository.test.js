@@ -256,5 +256,3 @@ describe("updateReservation - errors", () => {
     await expect(updateReservation(42, 20, 4, [])).rejects.toThrow("database unavailable");
   });
 });
-
-it.todo("signals 'not enough seats' with a client error status (e.g. 409) instead of a 500");

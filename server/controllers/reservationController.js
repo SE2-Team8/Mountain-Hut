@@ -13,10 +13,6 @@ const reservationController = {
 		// if temp hiker phone is specified, so must the temp hiker name
 		if (tmpHikerPhone && !tmpHikerName) return responseError(res, null, `Temp hiker name must be present if temp hiker phone is specified`, 400);
 
-		const timeSlot = await getTimeSlotById(timeSlotId);
-		if (!timeSlot)
-			return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
-
 		// get user who made the request
 		const reqUserId = req.user.userId;
 		const reqUser = await getUserById(reqUserId);
@@ -27,11 +23,6 @@ const reservationController = {
 		const reservationUser = await getUserById(reservationUserId);
 		const reqForExistingHiker = !isStaff(reservationUser);
 		const reqForTempHiker = tmpHikerName? true : false;
-
-		
-		if (reqForExistingHiker)
-			console.log("Req for existing user", reservationUserId);
-		
 
 		// if the request is made by a hiker, it must be for themselves
 		if (!reqFromStaff && reqUserId != reservationUserId)
@@ -48,6 +39,11 @@ const reservationController = {
 		// if the request is made by an employee for a temporary hiker, the userId in the reservation must be the employee themselves
 		if (reqFromStaff && reqForTempHiker && reqUserId != reservationUserId)
 			return responseError(res, null, `An employee making a reservation for a temporary hiker must specify their own userId in the body`, 400);
+
+		// get the reservation timeslot
+		const timeSlot = await getTimeSlotById(timeSlotId);
+		if (!timeSlot)
+			return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
 
 		// if the request is not made by an employee, a reservation can be done only up to 2h before the time slot start time
 		if (!reqFromStaff) {

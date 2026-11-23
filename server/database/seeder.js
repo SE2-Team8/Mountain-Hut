@@ -3,6 +3,7 @@ import db from "../config/db.js";
 import crypto from "crypto";
 import { PWD_HASH_LEN, SALT_LEN } from "../repositories/userRepository.js";
 import { dateToStringISO } from "../utils/dateTimeFormatter.js";
+import { createReservation } from "../repositories/reservationRepository.js";
 
 // user seeding
 const users = [
@@ -44,7 +45,7 @@ const users = [
 	},
 ];
 
-// TODO: use repo constants for salt and hash lengths
+
 users.forEach((user) => {
     user.salt = crypto.randomBytes(SALT_LEN).toString('hex');
     user.hashedPassword = crypto.scryptSync(user.password, user.salt, PWD_HASH_LEN).toString('hex');
@@ -91,6 +92,16 @@ const slots = [
 		// March 11, 2027, UTC 12:00:00 -> 14:00:00
 		startDateTime: new Date(Date.UTC(2027, 2, 11, 12, 0, 0)), 
 		endDateTime: new Date(Date.UTC(2027, 2, 11, 14, 0, 0))
+	},
+	{
+		// March 12, 2027, UTC 12:00:00 -> 14:00:00
+		startDateTime: new Date(Date.UTC(2027, 2, 12, 12, 0, 0)), 
+		endDateTime: new Date(Date.UTC(2027, 2, 12, 14, 0, 0))
+	},
+	{
+		// March 12, 2027, UTC 19:00:00 -> 21:00:00
+		startDateTime: new Date(Date.UTC(2027, 2, 12, 19, 0, 0)), 
+		endDateTime: new Date(Date.UTC(2027, 2, 12, 21, 0, 0))
 	},
 ];
 
@@ -177,6 +188,14 @@ const slotsTableSets = [
 		slotId: 3,
 		listIndex: 1
 	},
+	{
+		slotId: 4,
+		listIndex: 0
+	},
+	{
+		slotId: 5,
+		listIndex: 1
+	},
 ]
 
 db.serialize(() => {
@@ -198,6 +217,55 @@ db.serialize(() => {
     });
 });
 
-// TODO: reservations seeding (?)
+// reservations seeding
+
+const reservations = [
+	{
+		userId: 1,
+		timeSlotId: 1,
+		partySize: 2,
+		dietaryRequirements: [],
+		tmpHikerName: "GianFranco DelMonte",
+		tmpHikerPhone: null
+	},
+	{
+		userId: 4,
+		timeSlotId: 2,
+		partySize: 6,
+		dietaryRequirements: [
+			{ allergies: true, description: "1 No nuts" },
+			{ allergies: false, description: "1 Vegetarian" },
+		],
+		tmpHikerName: "GianFranco DelMonte",
+		tmpHikerPhone: null
+	}
+];
+
+// db.serialize(() => {
+// 	// for each slot-tableList assignment, load the list on the db
+//     reservations.forEach(({userId, timeSlotId, partySize, dietaryRequirements, tmpHikerName, tmpHikerPhone}) => {
+// 		// for each table in the list, load it on the db
+// 		tableLists[listIndex].forEach((table) => {
+// 			db.run(
+//             `INSERT INTO reservations (userId, timeSlotId, partySize, dietaryRequirements, temporaryHikerName, temporaryHikerPhone)
+// 			 VALUES (?, ?, ?, ?, ?, ?)`,
+//             [
+// 				table.number,
+// 				table.totalSeats,
+// 				table.totalSeats,
+// 				slotId
+// 			]
+//         );
+
+// 		// table assignments update....
+		
+// 		})
+//     });
+// });
+
+for (const { userId, timeSlotId, partySize, dietaryRequirements, tmpHikerName, tmpHikerPhone } of reservations) {
+  await createReservation(userId, timeSlotId, partySize, dietaryRequirements, tmpHikerName, tmpHikerPhone);
+}
+
 
 db.close();
