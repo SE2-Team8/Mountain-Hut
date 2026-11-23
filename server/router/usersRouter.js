@@ -3,7 +3,6 @@ import { query } from "express-validator";
 import userController from "../controllers/userController.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
 import requireRole from "../middlewares/requireRole.js";
-import { validator } from "../middlewares/validator.js";
 import wrapController from "../utils/wrapController.js";
 import { validator, checkBodyLength } from "../middlewares/validator.js";
 import { body } from "express-validator";
