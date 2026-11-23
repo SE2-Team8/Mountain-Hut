@@ -198,6 +198,45 @@
 				}
 			}
 		},
+		"/auth/change-password": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Change the password of the logged-in user",
+				"security": [{ "cookieAuth": [] }],
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { 
+						"schema": { "$ref": "#/components/schemas/ChangePasswordRequest"}
+					}}
+				},
+				"responses": {
+					"200": {
+						"description": "Password successfully changes",
+						"content": { "application/json": { "schema": {
+							"allOf": [
+								{ "$ref": "#/components/schemas/Success" },
+								{
+									"type": "object",
+									"properties": {
+										"data": { "nullable": true, "example": null }
+									}
+								}
+							]
+						}}}
+					},
+					"400": { "$ref": "#/components/responses/BadRequest" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": {
+						"description": "The current password is wrong",
+						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }}}
+					},
+					"422": {
+						"description": "Validation error: a field is missing or not a string, the new password is too short or too long, or it is equal to the current one",
+						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }}}
+					}
+				}
+			}
+		},
 		"/users": {
 			"post": {
 				"tags": ["Users"],
@@ -535,6 +574,14 @@
 				"required": ["email"],
 				"properties": {
 					"email": {"type": "string", "format": "email"}
+				}
+			},
+			"ChangePasswordRequest": {
+				"type": "object",
+				"required": ["currentPassword", "newPassword"],
+				"properties": {
+					"currentPassword": { "type": "string" },
+					"newPassword": { "type": "string", "description": "Must be different from currentPassword"}
 				}
 			},
 			"CreateUserRequest": {
