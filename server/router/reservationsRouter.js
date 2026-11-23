@@ -8,13 +8,15 @@ import wrapController from "../utils/wrapController.js";
 const router = express.Router();
 
 router.post('/', isAuthenticated,
-    checkBodyLength(3),
     validator([
-        body('timeSlotId').notEmpty().withMessage('timeSlotId is required').isInt().withMessage('timeSlotId must be an integer'),
+        body('userId').notEmpty().withMessage('userId is required').isInt({ min: 1}).withMessage('userId must be an integer grater than 0'),
+        body('timeSlotId').notEmpty().withMessage('timeSlotId is required').isInt({ min: 1}).withMessage('timeSlotId must be an integer grater than 0'),
         body('partySize').notEmpty().withMessage('partySize is required').isInt({ min: 1}).withMessage('partySize must be an integer grater than 0'),
         body('dietaryRequirements').exists().withMessage('dietaryRequirements is required').isArray().withMessage('dietaryRequirements must be an array'),
         body('dietaryRequirements.*.allergies').exists().withMessage('allergies is required').isBoolean().withMessage('allergies must be a boolean'),
-        body('dietaryRequirements.*.description').exists().withMessage('description is required').isString().withMessage('description must be a string').trim().notEmpty().withMessage('description cannot be empty')
+        body('dietaryRequirements.*.description').exists().withMessage('description is required').isString().withMessage('description must be a string').trim().notEmpty().withMessage('description cannot be empty'),
+        body('tmpHikerName').isString().withMessage('temporary hiker name must be a string').trim().notEmpty().withMessage('temporary hiker name cannot be empty when specified'),
+        body('tmpHikerPhone').isString().withMessage('temporary hiker phone must be a string').trim().notEmpty().withMessage('temporary hiker phone cannot be empty when specified')
     ]),
     wrapController(reservationController.create));
 

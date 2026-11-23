@@ -29,6 +29,8 @@ function createDBTables() {
 		timeSlotId INTEGER NOT NULL,
 		partySize INTEGER NOT NULL,
 		dietaryRequirements TEXT NOT NULL,
+		temporaryHikerName TEXT,
+		temporaryHikerPhone TEXT,
 		FOREIGN KEY (userId) REFERENCES users(userId),
 		FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
 	)`,

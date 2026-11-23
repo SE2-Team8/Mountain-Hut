@@ -1,5 +1,6 @@
 import {createReservation, getReservationById,getReservationsByUser, updateReservation} from "../repositories/reservationRepository.js";
 import { getTimeSlotById } from "../repositories/timeSlotRepository.js";
+import { getUserById, isStaff } from "../repositories/userRepository.js";
 import { sendTemplateEmail } from "../services/smtpService.js";
 import { formatDateTime } from "../utils/dateTimeFormatter.js";
 import { responseError, responseSuccess } from "../utils/response.js";
@@ -7,56 +8,105 @@ import { responseError, responseSuccess } from "../utils/response.js";
 const reservationController = {
 
 	create: async (req, res) => {
-		const { timeSlotId, partySize, dietaryRequirements } = req.body;
-		const userId = req.user.userId;
+		const { timeSlotId, partySize, dietaryRequirements, tmpHikerName, tmpHikerPhone } = req.body;
+
+		// if temp hiker phone is specified, so must the temp hiker name
+		if (tmpHikerPhone && !tmpHikerName) return responseError(res, null, `Temp hiker name must be present if temp hiker phone is specified`, 400);
 
 		const timeSlot = await getTimeSlotById(timeSlotId);
-		if (!timeSlot) return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
+		if (!timeSlot)
+			return responseError(res, null, `Time slot with timeSltoId=${timeSlotId} not found`, 404);
 
-		const startMs = timeSlot.startDateTime.getTime();
-		const nowMs = Date.now();
+		// get user who made the request
+		const reqUserId = req.user.userId;
+		const reqUser = await getUserById(reqUserId);
+		const reqFromStaff = isStaff(reqUser);
 
-		// since startMs and nowMs are in milliseconds -> 2h = 2 * 60(minutes) * 60(seconds) * 1000(milliseconds)
-		if (startMs - nowMs < (2 * 60 * 60 * 1000)) return responseError(res, null, "Reservation has to be taken at least 2 hours before the slot.", 400);
+		// get user which is the recipient of the reservation
+		const reservationUserId = req.body.userId;
+		const reservationUser = await getUserById(reservationUserId);
+		const reqForExistingHiker = !isStaff(reservationUser);
+		const reqForTempHiker = tmpHikerName? true : false;
 
-		const alreadyTaken = await getReservationsByUser(userId, timeSlotId);
-		if (alreadyTaken && alreadyTaken.length > 0) return responseError(res, null, "Reservation for that time slot already exist", 409);
+		
+		if (reqForExistingHiker)
+			console.log("Req for existing user", reservationUserId);
+		
 
+		// if the request is made by a hiker, it must be for themselves
+		if (!reqFromStaff && reqUserId != reservationUserId)
+			return responseError(res, null, `A hiker can only make a reservation for themselves`, 400);
+
+		// if the request is made for an hiker, the temporary hiker must be null
+		if (reqForExistingHiker && reqForTempHiker)
+			return responseError(res, null, `There cannot be both a hiker userId and a temporary hiker for a reservation`, 400);
+
+		// if the request is not made for an hiker, the temporary hiker must be present
+		if (!reqForExistingHiker && !reqForTempHiker)
+			return responseError(res, null, `A reservation must be done for either an existing hiker or a temporary one`, 400);
+
+		// if the request is made by an employee for a temporary hiker, the userId in the reservation must be the employee themselves
+		if (reqFromStaff && reqForTempHiker && reqUserId != reservationUserId)
+			return responseError(res, null, `An employee making a reservation for a temporary hiker must specify their own userId in the body`, 400);
+
+		// if the request is not made by an employee, a reservation can be done only up to 2h before the time slot start time
+		if (!reqFromStaff) {
+			const startMs = timeSlot.startDateTime.getTime();
+			const nowMs = Date.now();
+
+			// since startMs and nowMs are in milliseconds -> 2h = 2 * 60(minutes) * 60(seconds) * 1000(milliseconds)
+			if (startMs - nowMs < (2 * 60 * 60 * 1000))
+				return responseError(res, null, "Reservation has to be taken at least 2 hours before the slot.", 400);
+		}
+
+		// if the request is made for an existing hiker, only 1 reservation can be done
+		if (reqForExistingHiker) {
+			const alreadyTaken = await getReservationsByUser(reservationUserId, timeSlotId);
+			if (alreadyTaken && alreadyTaken.length > 0)
+				return responseError(res, null, "User already has a reservation for the selected time slot", 409);
+		}
+
+		// check that there is enough space
 		if (timeSlot.freeSeats < partySize) return responseError(res, null, "Not enough free seats", 400);
 
-		const reservId = await createReservation(userId, timeSlotId, partySize, dietaryRequirements);
+		// actually make the reservation (for the right user)
+		const reservId = await createReservation(reservationUserId, timeSlotId, partySize, dietaryRequirements, tmpHikerName, tmpHikerPhone);
 
-		const hasAnyAllergy = dietaryRequirements.some(req => req.allergies === true);
-		const formattedRequirements = dietaryRequirements.length > 0
-			? dietaryRequirements.map(req => 
-				`${req.description} ${req.allergies ? '(Allergy)' : '(Diet)'}`
-			).join(", ")
-			: "None";
+		// send the email only if the reservation is made for an existing hiker
+		if (reqForExistingHiker) {
+			const hasAnyAllergy = dietaryRequirements.some(req => req.allergies === true);
+			const formattedRequirements = dietaryRequirements.length > 0
+				? dietaryRequirements.map(req => 
+					`${req.description} ${req.allergies ? '(Allergy)' : '(Diet)'}`
+				).join(", ")
+				: "None";
 
-		await sendTemplateEmail({
-			to: req.user.email,
-			subject: "Reservation Confirmation",
-			templateName: "reservation-confirmation",
-			data: {
-				user: {
-					fullName: req.user.fullName,
+			await sendTemplateEmail({
+				to: reservationUser.email,
+				subject: "Reservation Confirmation",
+				templateName: "reservation-confirmation",
+				data: {
+					user: {
+						fullName: reservationUser.fullName,
+					},
+					reservation: {
+						reservId,
+						userId: reqUserId,
+						timeSlotId,
+						partySize,
+						allergies: hasAnyAllergy == true? "Yes" : "No",
+						dietaryRequirements: formattedRequirements
+					},
+					timeSlot: {
+						timeSlotId: timeSlot.timeSlotId,
+						startDateTime: formatDateTime(timeSlot.startDateTime),
+						endDateTime: formatDateTime(timeSlot.endDateTime),
+					},
 				},
-				reservation: {
-					reservId,
-					userId,
-					timeSlotId,
-					partySize,
-					allergies: hasAnyAllergy == true? "Yes" : "No",
-					dietaryRequirements: formattedRequirements
-				},
-				timeSlot: {
-					timeSlotId: timeSlot.timeSlotId,
-					startDateTime: formatDateTime(timeSlot.startDateTime),
-					endDateTime: formatDateTime(timeSlot.endDateTime),
-				},
-			},
-			text: "Your reservation has been confirmed.",
-		});
+				text: "Your reservation has been confirmed.",
+			});
+		}
+		
 
 		return responseSuccess(res, reservId, "Reservation successfully taken", 201);
 	},

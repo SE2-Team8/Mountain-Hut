@@ -4,6 +4,12 @@ import crypto from "crypto";
 const PWD_HASH_LEN = 64;
 const SALT_LEN = 16;
 
+const UserRole = Object.freeze({
+  HIKER: "HIKER",
+  EMPLOYEE: "EMPLOYEE",
+  WARDEN: "WARDEN"
+});
+
 function User(userId, role, fullName, email, phoneNumber, notes = null, emergencyContact = null) {
 	this.userId = userId;
 	this.role = role;
@@ -12,6 +18,10 @@ function User(userId, role, fullName, email, phoneNumber, notes = null, emergenc
 	this.phoneNumber = phoneNumber;
 	this.notes = notes;
 	this.emergencyContact = emergencyContact;
+}
+
+function isStaff(user) {
+	return [UserRole.EMPLOYEE, UserRole.WARDEN].includes(user.role);
 }
 
 // retrieves a user from its id (returns null if not found)
@@ -107,4 +117,4 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 // }
 
 
-export { User, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
+export { UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
