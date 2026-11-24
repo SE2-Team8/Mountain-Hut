@@ -135,4 +135,4 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 // }
 
 
-export { UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, PWD_HASH_LEN, SALT_LEN };
+export { UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, updatePassword, createHiker, PWD_HASH_LEN, SALT_LEN };
