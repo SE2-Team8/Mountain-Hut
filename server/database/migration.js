@@ -16,7 +16,8 @@ function createDBTables() {
 		email TEXT UNIQUE NOT NULL,
 		phoneNumber TEXT NOT NULL,
 		notes TEXT,
-		emergencyContact TEXT
+		emergencyContact TEXT,
+		mustChangePassword INTEGER NOT NULL DEFAULT 0
 	)`,
 	`CREATE TABLE IF NOT EXISTS timeSlots (
 		timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,

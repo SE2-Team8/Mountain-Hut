@@ -211,7 +211,7 @@
 				},
 				"responses": {
 					"200": {
-						"description": "Password successfully changes",
+						"description": "Password successfully changed",
 						"content": { "application/json": { "schema": {
 							"allOf": [
 								{ "$ref": "#/components/schemas/Success" },
@@ -231,7 +231,7 @@
 						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }}}
 					},
 					"422": {
-						"description": "Validation error: a field is missing or not a string, the new password is too short or too long, or it is equal to the current one",
+						"description": "Validation error: a field is missing or not a string or the new password it is equal to the current one",
 						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }}}
 					}
 				}

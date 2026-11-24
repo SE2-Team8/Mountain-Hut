@@ -10,7 +10,7 @@ const UserRole = Object.freeze({
   WARDEN: "WARDEN"
 });
 
-function User(userId, role, fullName, email, phoneNumber, notes = null, emergencyContact = null) {
+function User(userId, role, fullName, email, phoneNumber, notes = null, emergencyContact = null, mustChangePassword = false) {
 	this.userId = userId;
 	this.role = role;
 	this.fullName = fullName;
@@ -18,6 +18,7 @@ function User(userId, role, fullName, email, phoneNumber, notes = null, emergenc
 	this.phoneNumber = phoneNumber;
 	this.notes = notes;
 	this.emergencyContact = emergencyContact;
+	this.mustChangePassword = Boolean(mustChangePassword);
 }
 
 function isStaff(user) {
@@ -31,7 +32,7 @@ async function getUserById(id) {
     if (!user) return null;
 
     return new User(user.userId, user.role, user.fullName, user.email,
-		user.phoneNumber, user.notes, user.emergencyContact)
+		user.phoneNumber, user.notes, user.emergencyContact, user.mustChangePassword)
 }
 
 // retrieves a user from the given email (returns null if not found)
@@ -40,7 +41,7 @@ async function getUserFromEmail(email) {
 	if (!userRow) return null;
 
 	return new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
-		userRow.phoneNumber, userRow.notes, userRow.emergencyContact)
+		userRow.phoneNumber, userRow.notes, userRow.emergencyContact, userRow.mustChangePassword)
 }
 // retrieve a user by email or phone number or name
 // at the moment the query returns all information about the user but i'm not sure if everything is needed
@@ -51,7 +52,7 @@ async function getHikerbyEmOrPhoneOrName(value) {
 	);
 
 	return userRows.map(userRow => new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
-		userRow.phoneNumber, userRow.notes, userRow.emergencyContact));
+		userRow.phoneNumber, userRow.notes, userRow.emergencyContact, userRow.mustChangePassword));
 }
 
 // retrieves a user from the given credentials (returns null if not found or credentials are wrong)
@@ -67,7 +68,7 @@ async function getUserFromCredentials(email, password) {
 
 	if (credentials_ok)
 		return new User(userRow.userId, userRow.role, userRow.fullName, userRow.email,
-		userRow.phoneNumber, userRow.notes, userRow.emergencyContact)
+		userRow.phoneNumber, userRow.notes, userRow.emergencyContact, userRow.mustChangePassword)
 	else
 		return null;
 }
@@ -92,6 +93,23 @@ async function createUser(role, fullName, email, phoneNumber, notes = null, emer
 	);
 
 	return queryRes.lastID;
+}
+
+// Sets a new password for the given user and clears the mustChangePassword flag.
+// Returns true if the user exists and was updated, false otherwise.
+// The current password must be checked before calling this function
+async function updatePassword(userId, newPassword) {
+	const salt = crypto.randomBytes(SALT_LEN).toString('hex');
+	const hashedPassword = crypto.scryptSync(newPassword, salt, PWD_HASH_LEN).toString('hex');
+
+	const queryRes = await queryRun(
+		`UPDATE users
+		SET passwordHash = ?, passwordSalt = ?, mustChangePassword = 0
+		WHERE userId = ?`, 
+		[hashedPassword, salt, userId]
+	);
+
+	return queryRes.changes > 0;
 }
 
 // creates a hiker and returns the new user id, throws an error if
