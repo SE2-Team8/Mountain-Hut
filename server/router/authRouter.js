@@ -20,5 +20,17 @@ router.post('/register',
         body('phone').notEmpty().withMessage('phone is required').isString().withMessage('Phone must be a string')
     ]),
     wrapController(authController.register));
+router.post('/change-password', isAuthenticated,
+    validator([
+        body().custom((b) => Object.keys(b).every((key) => ["currentPassword", "newPassword"].includes(key)))
+            .withMessage('Only currentPassword and newPassword are allowed'),
+        body('currentPassword').exists().withMessage('currentPassword id required')
+            .isString().withMessage('currentPassword must be a string')
+            .notEmpty().withMessage('currentPassword cannot be empty'),
+        body('newPassword').exists().withMessage('newPassword is required')
+            .isString().withMessage('newPassword must be a string')
+            .notEmpty().withMessage("newPassword cannot be empty")
+    ]),
+    wrapController(authController.changePassword));
 
 export default router;

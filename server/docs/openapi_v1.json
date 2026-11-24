@@ -540,7 +540,8 @@
 					"fullName": { "type": "string" },
 					"phoneNumber": { "type": "string" },
 					"notes": { "type": "string" },
-					"emergencyContact": { "type": "string" }
+					"emergencyContact": { "type": "string" },
+					"mustChangePassword": { "type": "boolean" }
 				}
 			},
 			"LoginRequest": {
