@@ -13,14 +13,20 @@ const reservationController = {
 		// if temp hiker phone is specified, so must the temp hiker name
 		if (tmpHikerPhone && !tmpHikerName) return responseError(res, null, `Temp hiker name must be present if temp hiker phone is specified`, 400);
 
-		// get user who made the request
+		// get user who made the request (return error if not found)
 		const reqUserId = req.user.userId;
 		const reqUser = await getUserById(reqUserId);
+		if (!reqUser)
+			return responseError(res, null, `Requesting user not found`, 404);
+
 		const reqFromStaff = isStaff(reqUser);
 
-		// get user which is the recipient of the reservation
+		// get user which is the recipient of the reservation (return error if not found)
 		const reservationUserId = req.body.userId;
 		const reservationUser = await getUserById(reservationUserId);
+		if (!reservationUser)
+			return responseError(res, null, `Reservation user not found`, 404);
+
 		const reqForExistingHiker = !isStaff(reservationUser);
 		const reqForTempHiker = tmpHikerName? true : false;
 
