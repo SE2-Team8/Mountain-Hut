@@ -11,6 +11,14 @@ const router = express.Router();
 router.post('/login', passport.authenticate("local"), wrapController(authController.login));
 router.get('/me', isAuthenticated, wrapController(authController.getCurrent));
 router.post('/logout', wrapController(authController.logout));
+router.post('/setup-password',
+    validator([
+        body('token').hide().isString().bail().matches(/^[0-9a-f]{64}$/).withMessage('A valid setup token is required'),
+        body('password').hide().isString().bail()
+            .isLength({ min: 12, max: 128 }).withMessage('Password must be 12 to 128 characters').bail()
+            .custom((password) => password.trim().length > 0).withMessage('Password cannot be blank'),
+    ]),
+    wrapController(authController.setupPassword));
 router.post('/register',
     checkBodyLength(6),
     validator([

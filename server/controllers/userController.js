@@ -1,6 +1,7 @@
 import { getUser, searchHikers } from "../services/userService.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 import { createHiker, getUserFromEmail, getUserById } from "../repositories/userRepository.js";
+import { sendPasswordSetupEmail } from "../services/passwordSetupService.js";
 
 const userController = {
     
@@ -29,7 +30,14 @@ const userController = {
 
         if (newUser == null) return responseError(res, null, "Error during creation of new user", 500);
 
-        return responseSuccess(res, newUser, "User succesfully registered", 201);
+        const passwordSetupEmailSent = await sendPasswordSetupEmail(newUser).catch(() => {
+            console.error(`Could not send a password setup email for user ${newUserId}.`);
+            return false;
+        });
+        const message = passwordSetupEmailSent
+            ? "Hiker created and password setup email sent"
+            : "Hiker created. Password setup email delivery failed.";
+        return responseSuccess(res, { ...newUser, passwordSetupEmailSent }, message, 201);
     }
 
 };

@@ -9,6 +9,7 @@ import PageMyReservations from "@/pages/reservations";
 import PageCapacity from "@/pages/capacity";
 import PageAvailability from "@/pages/availability";
 import PageSignUp from "@/pages/signup";
+import PageSetupPassword from "@/pages/setupPassword";
 import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
 import auth from "@/middlewares/auth";
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
             {
                 path: 'auth/signup',
                 Component: PageSignUp
+            },
+            {
+                path: 'auth/setup-password',
+                Component: PageSetupPassword
             }
         ]
     },
