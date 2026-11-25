@@ -6,7 +6,7 @@ import { queryGet } from "../../utils/query";
 import { initSchema, resetDb, loginAsRole, getUserId, muteConsoleError, expectEnvelope, USERS } from "../helpers/helpers.js";
 
 // the seeded users
-const { warden, employee, hiker, hiker2 } = USERS;
+const [warden, employee, hiker, hiker2] = USERS;
 
 const search = (agent, value) => agent.get("/api/users/search").query(value === undefined ? {} : { value });
 const names = (res) => res.body.data.map((u) => u.fullName);

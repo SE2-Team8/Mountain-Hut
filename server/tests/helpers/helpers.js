@@ -51,6 +51,13 @@ export const USERS = [
 	HIKER_USER_2
 ];
 
+const USERS_BY_ROLE = { 
+	warden: WARDEN_USER, 
+	employee: EMPLOYEE_USER, 
+	hiker: HIKER_USER_1, 
+	hiker2: HIKER_USER_2 
+};
+
 export const GET_USER_BY_ID_MOCKED = (userId) => Object.assign({}, USERS[userId - 1]);
 
 const TABLE_LIST_1 = [6, 4, 6, 6, 4, 8]; 
@@ -137,7 +144,7 @@ export async function loginAs(email, password) {
 	return agent;
 }
 
-export const loginAsRole = (role) => loginAs(USERS[role].email, USERS[role].password);
+export const loginAsRole = (role) => loginAs(USERS_BY_ROLE[role].email, USERS_BY_ROLE[role].password);
 
 
 export async function getUserId(email) {
