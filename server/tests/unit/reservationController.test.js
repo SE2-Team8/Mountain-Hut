@@ -12,7 +12,7 @@ import reservationController from "../../controllers/reservationController.js";
 import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import { sendTemplateEmail } from "../../services/smtpService.js";
 import { getUserById } from "../../repositories/userRepository.js";
-import { GET_USER_BY_ID_MOCKED } from "../helpers/helpers.js";
+import { GET_USER_BY_ID_MOCKED, HIKER_USER_1 } from "../helpers/helpers.js";
 
 vi.mock("../../repositories/reservationRepository.js", () => ({
   createReservation: vi.fn(),
@@ -45,8 +45,25 @@ vi.mock("../../utils/dateTimeFormatter.js", async (importOriginal) => {
 const NOW = new Date("2027-03-10T10:00:00Z");
 const HOUR = 3600e3;
 const res = {};
+// TODO: remove SESSION USER and refactor callControllerUpdate like the callCreateReservation
 const SESSION_USER = { userId: 7, role: "HIKER", fullName: "Mario Rossi", email: "hiker@example.com" };
-const callControllerCreate = (body, user = SESSION_USER) => reservationController.create({ user, body }, res);
+const callCreateReservation = async (requestUserId, reservationUserId, timeSlotId, partySize, dietaryReqs = [], tmpHikerName = null, tmpHikerPhone = null) => {
+	await reservationController.create(
+		{
+		user: {
+				userId: requestUserId
+			}, 
+		body: {
+				timeSlotId: timeSlotId,
+				userId: reservationUserId,
+				partySize: partySize,
+				dietaryRequirements: dietaryReqs,
+				tmpHikerName: tmpHikerName,
+				tmpHikerPhone: tmpHikerPhone
+			} 
+		}, res);
+	return res;
+}
 const callControllerUpdate = (body, user = SESSION_USER, id = 42) => reservationController.update({ params: { id: String(id) }, user, body }, res);
 const slotStartingIn = (ms) => ({ timeSlotId: 1, startDateTime: new Date(NOW.getTime() + ms), endDateTime: new Date(NOW.getTime() + 2 * ms) });
 const updateBody = (overrides = {}) => ({ timeSlotId: 2, partySize: 6, dietaryRequirements: [], ...overrides });
@@ -81,33 +98,27 @@ afterEach(() => vi.useRealTimers());
 
 describe("reservationController.create - happy path", () => {
   it("books for the logged user, taking the id from the session, and answers 201", async () => {
-    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: [] });
+    await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 4);
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, []);
     expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+    expect(createReservation).toHaveBeenCalledWith(HIKER_USER_1.userId, 1, 4, [], null, null);
+
   });
 
   it("passes dietary requirements", async () => {
 	const dietaryReq = [{allergies: true, description: "No nuts"}];
-    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: dietaryReq });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 4, dietaryReq);
 
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 4, dietaryReq);
+    expect(createReservation).toHaveBeenCalledWith(HIKER_USER_1.userId, 1, 4, dietaryReq, null, null);
     expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
   });
-
-  it("ignores a userId sent in the body (no booking on behalf of others)", async () => {
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, userId: 999, dietaryRequirements: [] });
-
-    expect(createReservation).toHaveBeenCalledWith(7, 1, 2, []);
-  });
-
 });
 
 describe("reservationController.create - input validation", () => {
   it("answers 404 for a time slot that does not exist (instead of crashing)", async () => {
     getTimeSlotById.mockResolvedValue(null);
 
-    await callControllerCreate({ timeSlotId: 99, partySize: 2, dietaryRequirements: [] });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 999, 1);
 
     expect(responseError.mock.calls[0][3]).toBe(404);
     expect(createReservation).not.toHaveBeenCalled();
@@ -118,14 +129,14 @@ describe("reservationController.create - input validation", () => {
 describe("reservationController.create - 2 hours rule", () => {
   it("accepts a reservation made exactly 2 hours before the slot", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: []});
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 1);
 
     expect(createReservation).toHaveBeenCalled();
   });
 
   it("rejects a reservation made 1 minute too late", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(2 * HOUR - 60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 1);
 
     expect(responseError.mock.calls[0][3]).toBe(400);
     expect(createReservation).not.toHaveBeenCalled();
@@ -133,7 +144,7 @@ describe("reservationController.create - 2 hours rule", () => {
 
   it("rejects a slot that has already started", async () => {
     getTimeSlotById.mockResolvedValue(slotStartingIn(-60e3));
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 1);
 
     expect(responseError).toHaveBeenCalled();
     expect(createReservation).not.toHaveBeenCalled();
@@ -143,16 +154,17 @@ describe("reservationController.create - 2 hours rule", () => {
 describe("reservationController.create - one reservation per time slot", () => {
   it("answers 409 when the hiker already has a reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([{ reservId: 1 }]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
+	const timeslotId = 1;
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, timeslotId, 1);
 
-    expect(getReservationsByUser).toHaveBeenCalledWith(7, 1);
+    expect(getReservationsByUser).toHaveBeenCalledWith(HIKER_USER_1.userId, timeslotId);
     expect(responseError.mock.calls[0][3]).toBe(409);
     expect(createReservation).not.toHaveBeenCalled();
   });
 
   it("books when the hiker has no reservation for that slot", async () => {
     getReservationsByUser.mockResolvedValue([]);
-    await callControllerCreate({ timeSlotId: 1, partySize: 2, dietaryRequirements: [] });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 1);
 
     expect(createReservation).toHaveBeenCalled();
   });
@@ -160,9 +172,10 @@ describe("reservationController.create - one reservation per time slot", () => {
 
 describe("reservationController.create - errors", () => {
   it("lets repository errors reach the error handler", async () => {
-    createReservation.mockRejectedValue(new Error("Not enough free seats"));
+	const err_text = "Not enough free seats";
+    createReservation.mockRejectedValue(new Error(err_text));
 
-    await expect(callControllerCreate({ timeSlotId: 1, partySize: 500, dietaryRequirements: [] })).rejects.toThrow("Not enough free seats");
+    await expect(callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 10000)).rejects.toThrow(err_text);
     expect(responseSuccess).not.toHaveBeenCalled();
   });
 });
@@ -178,47 +191,54 @@ describe("reservationController.create - email notification", () => {
 	async (dietaryReq, [expectedAllergies, expectedFormattedDietaryReq]) => {
     
     getTimeSlotById.mockResolvedValue(slotStartingIn(24 * HOUR));
-    createReservation.mockResolvedValue(42);  
+	const reservExpectedId = 42;
+	const startExpectedDateTime = "10-03-2027 10:00";
+	const endExpectedDateTime = "10-03-2027 12:00";
+	const partySize = 4;
+	const timeSlotId = 1;
+    createReservation.mockResolvedValue(reservExpectedId);  
     
     formatDateTime
-      .mockReturnValueOnce("10-03-2027 10:00") // startDateTime
-      .mockReturnValueOnce("10-03-2027 12:00"); // endDateTime
+      .mockReturnValueOnce(startExpectedDateTime) // startDateTime
+      .mockReturnValueOnce(endExpectedDateTime); // endDateTime
+	
 
-    await callControllerCreate({ timeSlotId: 1, partySize: 4, dietaryRequirements: dietaryReq });
+	await callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, timeSlotId, partySize, dietaryReq);
     
     expect(sendTemplateEmail).toHaveBeenCalledWith({
-      to: "hiker@example.com",
+      to: HIKER_USER_1.email,
       subject: "Reservation Confirmation",
       templateName: "reservation-confirmation",
       data: {
         user: {
-          fullName: "Mario Rossi",
+          fullName: HIKER_USER_1.fullName,
         },
         reservation: {
-          reservId: 42,
-          userId: 7,
-          timeSlotId: 1,
-          partySize: 4,
+          reservId: reservExpectedId,
+          userId: HIKER_USER_1.userId,
+          timeSlotId: timeSlotId,
+          partySize: partySize,
 		  allergies: expectedAllergies,
 		  dietaryRequirements: expectedFormattedDietaryReq,
         },
         timeSlot: {
-          timeSlotId: 1,
-          startDateTime: "10-03-2027 10:00",
-          endDateTime: "10-03-2027 12:00",
+          timeSlotId: timeSlotId,
+          startDateTime: startExpectedDateTime,
+          endDateTime: endExpectedDateTime,
         },
       },
       text: "Your reservation has been confirmed.",
     });
     
-    expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+    expect(responseSuccess).toHaveBeenCalledWith(res, reservExpectedId, expect.any(String), 201);
   });
 
   it("lets SMTP service errors reach the error handler without sending success response", async () => {
     
     sendTemplateEmail.mockRejectedValue(new Error("SMTP server down"));
 
-    await expect(callControllerCreate({ timeSlotId: 1, partySize: 4, allergies: false, dietaryRequirements: [] })).rejects.toThrow("SMTP server down");
+
+    await expect(callCreateReservation(HIKER_USER_1.userId, HIKER_USER_1.userId, 1, 4)).rejects.toThrow("SMTP server down");
     
     expect(responseSuccess).not.toHaveBeenCalled();
   });
