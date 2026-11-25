@@ -155,6 +155,25 @@
 				}
 			}
 		},
+		"/auth/setup-password": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Set the first password for a staff-created hiker",
+				"description": "Consumes an emailed setup token and enables the hiker to log in. Setup links expire after 24 hours.",
+				"requestBody": {
+					"required": true,
+					"content": { "application/json": { "schema": { "$ref": "#/components/schemas/SetupPasswordRequest" } } }
+				},
+				"responses": {
+					"200": {
+						"description": "Initial password set",
+						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } }
+					},
+					"400": { "description": "Setup token is invalid, expired, or already used" },
+					"422": { "description": "Invalid token format or password" }
+				}
+			}
+		},
 		"/auth/set-new-password": {
 			"post": {
 				"tags": ["Auth"],
@@ -560,6 +579,14 @@
 					"password": { "type": "string" },
 					"fullName": { "type": "string" },
 					"phone": { "type": "string" }
+				}
+			},
+			"SetupPasswordRequest": {
+				"type": "object",
+				"required": ["token", "password"],
+				"properties": {
+					"token": { "type": "string", "pattern": "^[0-9a-f]{64}$", "writeOnly": true },
+					"password": { "type": "string", "minLength": 12, "maxLength": 128, "writeOnly": true }
 				}
 			},
 			"SetNewPasswordRequest": {

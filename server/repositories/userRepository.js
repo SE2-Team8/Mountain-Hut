@@ -58,7 +58,7 @@ async function getHikerbyEmOrPhoneOrName(value) {
 // retrieves a user from the given credentials (returns null if not found or credentials are wrong)
 async function getUserFromCredentials(email, password) {
 	const userRow = await queryGet('SELECT * FROM users WHERE email = ?', [email]);
-	if (!userRow) return null;
+	if (!userRow || userRow.mustChangePassword) return null;
 
 	const hash = crypto.scryptSync(password, userRow.passwordSalt, PWD_HASH_LEN);
 	const credentials_ok = crypto.timingSafeEqual(
@@ -73,6 +73,12 @@ async function getUserFromCredentials(email, password) {
 		return null;
 }
 
+function hashPassword(password) {
+	const salt = crypto.randomBytes(SALT_LEN).toString("hex");
+	const hash = crypto.scryptSync(password, salt, PWD_HASH_LEN).toString("hex");
+	return { hash, salt };
+}
+
 // creates a user and returns the new user id, throws an error if
 // a user with the same email already exists
 async function createUser(role, fullName, email, phoneNumber, notes = null, emergencyContact = null, password = null) {
@@ -81,15 +87,14 @@ async function createUser(role, fullName, email, phoneNumber, notes = null, emer
     if (existingUser)
 		throw new Error("User with the same email already exists!");
 
-	const finalPwd = password?.trim() || crypto.randomBytes(8).toString("hex");
-	const salt = crypto.randomBytes(SALT_LEN).toString('hex');
-	const hashedPassword = crypto.scryptSync(finalPwd, salt, PWD_HASH_LEN).toString('hex');
+	const mustChangePassword = role === UserRole.HIKER && password === null;
+	const { hash, salt } = hashPassword(password?.trim() || crypto.randomBytes(32).toString("hex"));
     
 	const queryRes = await queryRun(
 		`INSERT INTO users 
-		(passwordHash, passwordSalt, role, fullName, email, phoneNumber, notes, emergencyContact)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		[hashedPassword, salt, role, fullName, email, phoneNumber, notes, emergencyContact]
+		(passwordHash, passwordSalt, role, fullName, email, phoneNumber, notes, emergencyContact, mustChangePassword)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		[hash, salt, role, fullName, email, phoneNumber, notes, emergencyContact, Number(mustChangePassword)]
 	);
 
 	return queryRes.lastID;
@@ -118,6 +123,28 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 	return await createUser("HIKER", fullName, email, phoneNumber, notes, emergencyContact, password);
 }
 
+async function storePasswordSetupToken(userId, tokenHash, expiresAt) {
+	const result = await queryRun(`UPDATE users SET passwordSetupTokenHash = ?, passwordSetupExpiresAt = ?
+		WHERE userId = ? AND role = 'HIKER' AND mustChangePassword = 1 AND passwordSetupTokenHash IS NULL`,
+	[tokenHash, expiresAt, userId]);
+	return result.changes === 1;
+}
+
+async function setInitialPassword(tokenHash, password) {
+	const pending = await queryGet(`SELECT userId FROM users
+		WHERE passwordSetupTokenHash = ? AND passwordSetupExpiresAt > ? AND role = 'HIKER' AND mustChangePassword = 1`,
+	[tokenHash, Date.now()]);
+	if (!pending) return false;
+
+	const { hash, salt } = hashPassword(password);
+	const result = await queryRun(`UPDATE users SET passwordHash = ?, passwordSalt = ?, mustChangePassword = 0,
+		passwordSetupTokenHash = NULL, passwordSetupExpiresAt = NULL
+		WHERE userId = ? AND passwordSetupTokenHash = ? AND passwordSetupExpiresAt > ?
+		AND role = 'HIKER' AND mustChangePassword = 1`,
+	[hash, salt, pending.userId, tokenHash, Date.now()]);
+	return result.changes === 1;
+}
+
 
 // 
 
@@ -135,4 +162,7 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 // }
 
 
-export { UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, updatePassword, createHiker, PWD_HASH_LEN, SALT_LEN };
+export {
+	UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, updatePassword,
+	createHiker, storePasswordSetupToken, setInitialPassword, PWD_HASH_LEN, SALT_LEN
+};

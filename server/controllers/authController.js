@@ -1,4 +1,5 @@
 import { createHiker, getUserById, getUserFromEmail, getUserFromCredentials, updatePassword } from "../repositories/userRepository.js";
+import { completePasswordSetup } from "../services/passwordSetupService.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 import { sendTemplateEmail } from "../services/smtpService.js";
 import { formatDateTime } from "../utils/dateTimeFormatter.js";
@@ -31,6 +32,14 @@ const authController = {
     getCurrent: (req, res) => {
         if (!req.user) return responseError(res, null, "Not authenticated", 401);
         return responseSuccess(res, req.user, "Current user retrieved");
+    },
+
+    setupPassword: async (req, res) => {
+        const { token, password } = req.body;
+        if (!await completePasswordSetup(token, password)) {
+            return responseError(res, null, "This setup link is invalid, expired, or already used.", 400);
+        }
+        return responseSuccess(res, null, "Password set. You can now log in.");
     },
 
     changePassword: async (req, res) => {
