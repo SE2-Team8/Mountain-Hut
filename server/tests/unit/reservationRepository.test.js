@@ -122,9 +122,9 @@ describe("createReservation - results and persistence", () => {
 	const dietaryNotes = [{allergies: true, description: "No nuts"}, {allergies: false, description: "Vegan"}];
 	it.each(
 	[
-		[[USER_ID, TIME_SLOT_ID, 3, []], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([])]],
-		[[USER_ID, TIME_SLOT_ID, 3, []], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([])]],
-		[[USER_ID, TIME_SLOT_ID, 3, dietaryNotes], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify(dietaryNotes)]],
+		[[USER_ID, TIME_SLOT_ID, 3, [], null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), null, null]],
+		[[USER_ID, TIME_SLOT_ID, 3, [], null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), null, null]],
+		[[USER_ID, TIME_SLOT_ID, 3, dietaryNotes, null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify(dietaryNotes), null, null]],
 	]
   )("inserts the reservation and returns its id", async (args, expected) => {
     givenFreeTables(table(1, 4));

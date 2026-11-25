@@ -11,6 +11,7 @@ import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import {
 	initSchema, resetDb, loginAsRole, getUserId, getTimeSlotId, getReservations, getAssignments, getFreeSeats,
 	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, USERS, SLOTS,
+	HIKER_USER_2,
 } from "../helpers/helpers.js";
 
 const [S1, S2, , S4, S5] = SLOTS;
@@ -172,7 +173,7 @@ describe("PUT /api/reservations/:id - success", () => {
 		expect(res.status).toBe(200);
 		expectEnvelope(res, true);
 		const [row] = await getReservations();
-		expect(row).toMatchObject({ reservId, userId: await getUserId(USERS.hiker.email), timeSlotId: slot2, partySize: 6 });
+		expect(row).toMatchObject({ reservId, userId: await getUserId(HIKER_USER_1.email), timeSlotId: slot2, partySize: 6 });
 		expect(storedRequirements(row)).toEqual(requirements);
 	});
 
@@ -448,7 +449,7 @@ describe("PUT /api/reservations/:id - input validation", () => {
 		sendMail.mockClear();
 		const before = await snapshot(reservId);
 
-		const res = await update(agent, reservId, { userId: await getUserId(USERS.hiker2.email) });
+		const res = await update(agent, reservId, { userId: await getUserId(HIKER_USER_2.email) });
 
 		expect(res.status).toBe(400);
 		await expectUnchanged(reservId, before);
@@ -611,9 +612,9 @@ describe("PUT /api/reservations/:id - email notification", () => {
 		}).expect(200);
 
 		expect(sendMail).toHaveBeenCalledTimes(1);
-		expect(sentMail()).toMatchObject({ to: USERS.hiker.email, subject: "Reservation Updated" });
+		expect(sentMail()).toMatchObject({ to: HIKER_USER_1.email, subject: "Reservation Updated" });
 		const html = sentMail().html;
-		expect(html).toContain(USERS.hiker.fullName);
+		expect(html).toContain(HIKER_USER_1.fullName);
 		expect(html).toContain(`<strong>Reservation number:</strong> ${reservId}`);
 		expect(html).toContain("<strong>Party size:</strong> 6");
 		expect(html).toContain("<strong>Allergies:</strong> Yes");

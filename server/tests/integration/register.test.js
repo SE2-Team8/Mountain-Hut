@@ -3,7 +3,7 @@ import request from "supertest";
 import app from "../../index.js";
 import db from "../../config/db.js";
 import { queryGet } from "../../utils/query.js";
-import { initSchema, resetDb, muteConsoleError, expectEnvelope, USERS } from "../helpers/helpers.js";
+import { initSchema, resetDb, muteConsoleError, expectEnvelope, USERS, WARDEN_USER } from "../helpers/helpers.js";
 
 beforeAll(initSchema);
 beforeEach(async () => {
@@ -114,18 +114,18 @@ describe("POST /api/auth/register - validation", () => {
 describe("POST /api/auth/register - duplicated email", () => {
 	it("is refused, keeps the original account untouched and does not log the attacker in", async () => {
 		const agent = request.agent(app);
-		const res = await register({ ...NEW_USER, email: USERS.warden.email, password: "attacker-password" }, agent);
+		const res = await register({ ...NEW_USER, email: WARDEN_USER.email, password: "attacker-password" }, agent);
 
 		expect(res.status).toBeGreaterThanOrEqual(400);
 		expectEnvelope(res, false);
 		expect(await countUsers()).toBe(Object.keys(USERS).length);
 		expect((await agent.get("/api/auth/me")).status).toBe(401);
-		await request(app).post("/api/auth/login").send({ username: USERS.warden.email, password: USERS.warden.password }).expect(200);
-		await request(app).post("/api/auth/login").send({ username: USERS.warden.email, password: "attacker-password" }).expect(401);
+		await request(app).post("/api/auth/login").send({ username: WARDEN_USER.email, password: WARDEN_USER.password }).expect(200);
+		await request(app).post("/api/auth/login").send({ username: WARDEN_USER.email, password: "attacker-password" }).expect(401);
 	});
 
 	it("answers 409 Conflict", async () => {
-		const res = await register({ ...NEW_USER, email: USERS.warden.email });
+		const res = await register({ ...NEW_USER, email: WARDEN_USER.email });
 		expect(res.status).toBe(409);
 	});
 });

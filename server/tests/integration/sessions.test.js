@@ -11,7 +11,7 @@ afterAll(() => db.close());
 const credentials = (user) => ({ username: user.email, password: user.password });
 
 describe("POST /api/auth/login (login)", () => {
-	it.each([["hiker", USERS.hiker], ["warden", USERS.warden]])("200 and the profile of the user, for a %s", async (_name, user) => {
+	it.each([["hiker", HIKER_USER_1], ["warden", WARDEN_USER]])("200 and the profile of the user, for a %s", async (_name, user) => {
 		const res = await request(app).post("/api/auth/login").send(credentials(user));
 
 		expect(res.status).toBe(200);
@@ -28,7 +28,7 @@ describe("POST /api/auth/login (login)", () => {
 	});
 
 	it("never exposes the password hash or the salt", async () => {
-		const res = await request(app).post("/api/auth/login").send(credentials(USERS.hiker));
+		const res = await request(app).post("/api/auth/login").send(credentials(HIKER_USER_1));
 
 		expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|passwordSalt/);
 	});
@@ -36,7 +36,7 @@ describe("POST /api/auth/login (login)", () => {
 
 	it("401 on a wrong password, and no session is created", async () => {
 		const agent = request.agent(app);
-		const res = await agent.post("/api/auth/login").send({ username: USERS.hiker.email, password: "wrong" });
+		const res = await agent.post("/api/auth/login").send({ username: HIKER_USER_1.email, password: "wrong" });
 
 		expect(res.status).toBe(401);
 		expect((await agent.get("/api/auth/me")).status).toBe(401);
@@ -53,15 +53,15 @@ describe("POST /api/auth/login (login)", () => {
 	});
 
 	it("400 when the credentials are missing", async () => {
-		const res = await request(app).post("/api/auth/login").send({ username: USERS.hiker.email });
+		const res = await request(app).post("/api/auth/login").send({ username: HIKER_USER_1.email });
 		expect(res.status).toBe(400);
 	});
 
 	it("a second login on the same session replaces the first user", async () => {
 		const agent = await loginAsRole("hiker");
-		await agent.post("/api/auth/login").send(credentials(USERS.warden)).expect(200);
+		await agent.post("/api/auth/login").send(credentials(WARDEN_USER)).expect(200);
 		const current = await agent.get("/api/auth/me");
-		expect(current.body.data.email).toBe(USERS.warden.email);
+		expect(current.body.data.email).toBe(WARDEN_USER.email);
 	});
 
 	it("two agents have independent sessions", async () => {
@@ -84,7 +84,7 @@ describe("GET /api/auth/me", () => {
 		const res = await agent.get("/api/auth/me");
 		expect(res.status).toBe(200);
 		expectEnvelope(res, true);
-		expect(res.body.data).toMatchObject({ email: USERS.hiker.email, fullName: USERS.hiker.fullName, role: "HIKER" });
+		expect(res.body.data).toMatchObject({ email: HIKER_USER_1.email, fullName: HIKER_USER_1.fullName, role: "HIKER" });
 		expect(res.body.data).not.toHaveProperty("passwordHash");
 	});
 });
@@ -92,7 +92,7 @@ describe("GET /api/auth/me", () => {
 describe("POST /api/auth/logout", () => {
 	it("200, and the session no longer grants access", async () => {
 		const agent = await loginAsRole("hiker");
-		const userId = await getUserId(USERS.hiker.email);
+		const userId = await getUserId(HIKER_USER_1.email);
 		const res = await agent.post("/api/auth/logout");
 		expect(res.status).toBe(200);
 		expectEnvelope(res, true);

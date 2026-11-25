@@ -1,22 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("../../repositories/reservationRepository.js", () => ({
-  createReservation: vi.fn(),
-  getReservationById: vi.fn(),
-  getReservationsByUser: vi.fn(),
-  updateReservation: vi.fn(),
-}));
-vi.mock("../../repositories/timeSlotRepository.js", () => ({
-  getTimeSlotById: vi.fn(),
-}));
-vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseError: vi.fn() }));
-vi.mock("../../services/smtpService.js", () => ({
-	sendTemplateEmail: vi.fn(),
-}));
-vi.mock("../../utils/dateTimeFormatter.js", () => ({
-  formatDateTime: vi.fn(),
-}));
-
 import {
   createReservation,
   getReservationById,
@@ -28,6 +11,36 @@ import { responseSuccess, responseError } from "../../utils/response.js";
 import reservationController from "../../controllers/reservationController.js";
 import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import { sendTemplateEmail } from "../../services/smtpService.js";
+import { getUserById } from "../../repositories/userRepository.js";
+import { GET_USER_BY_ID_MOCKED } from "../helpers/helpers.js";
+
+vi.mock("../../repositories/reservationRepository.js", () => ({
+  createReservation: vi.fn(),
+  getReservationById: vi.fn(),
+  getReservationsByUser: vi.fn(),
+  updateReservation: vi.fn(),
+}));
+vi.mock("../../repositories/userRepository.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getUserById: vi.fn(),
+  };
+});
+vi.mock("../../repositories/timeSlotRepository.js", () => ({
+  getTimeSlotById: vi.fn(),
+}));
+vi.mock("../../utils/response.js", () => ({ responseSuccess: vi.fn(), responseError: vi.fn() }));
+vi.mock("../../services/smtpService.js", () => ({
+	sendTemplateEmail: vi.fn(),
+}));
+vi.mock("../../utils/dateTimeFormatter.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    formatDateTime: vi.fn(),
+  };
+});
 
 const NOW = new Date("2027-03-10T10:00:00Z");
 const HOUR = 3600e3;
@@ -61,7 +74,8 @@ beforeEach(() => {
   createReservation.mockResolvedValue(42);
   updateReservation.mockResolvedValue(42);
   sendTemplateEmail.mockResolvedValue(undefined);
-  formatDateTime.mockReturnValue("formatted-date-string");
+//   formatDateTime.mockReturnValue("formatted-date-string");
+  getUserById.mockImplementation(GET_USER_BY_ID_MOCKED);
 });
 afterEach(() => vi.useRealTimers());
 

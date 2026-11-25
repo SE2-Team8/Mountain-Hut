@@ -10,7 +10,7 @@ afterAll(() => db.close());
 
 describe("GET /api/users/:userId", () => {
 	it("401 with the standard error envelope when not authenticated", async () => {
-		const res = await request(app).get(`/api/users/${await getUserId(USERS.hiker.email)}`);
+		const res = await request(app).get(`/api/users/${await getUserId(HIKER_USER_1.email)}`);
 
 		expect(res.status).toBe(401);
 		expectEnvelope(res, false);
@@ -26,17 +26,17 @@ describe("GET /api/users/:userId", () => {
 
 	it("a warden can read the profile of a hiker", async () => {
 		const agent = await loginAsRole("warden");
-		const res = await agent.get(`/api/users/${await getUserId(USERS.hiker.email)}`);
+		const res = await agent.get(`/api/users/${await getUserId(HIKER_USER_1.email)}`);
 
 		expect(res.status).toBe(200);
-		expect(res.body.data).toMatchObject({ email: USERS.hiker.email });
+		expect(res.body.data).toMatchObject({ email: HIKER_USER_1.email });
 	});
 
 	// any user can retrieve information about any other user, this functionality should be reserved only for the user
 	// itself or to employees
 	it("a hiker cannot read the profile of another user", async () => {
 		const agent = await loginAsRole("hiker");
-		const res = await agent.get(`/api/users/${await getUserId(USERS.hiker2.email)}`);
+		const res = await agent.get(`/api/users/${await getUserId(HIKER_USER_2.email)}`);
 		expect(res.status).toBe(403);
 	});
 });

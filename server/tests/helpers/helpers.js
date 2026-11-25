@@ -8,16 +8,54 @@ import { queryAll, queryGet, queryRun } from "../../utils/query.js";
 import { createDBTables, deleteDBData } from "../../database/migration.js";
 
 
-export const USERS = {
-	warden: { password: process.env.SEED_USER_PWD, role: "WARDEN", fullName: "Mario Rossi", email: "mario.rossi@gmail.com", phoneNumber: "+39 1234567890", notes: null, emergencyContact: null },
-	employee: { password: process.env.SEED_USER_PWD, role: "EMPLOYEE", fullName: "Luigi Rossi", email: "luigi.rossi@libero.it", phoneNumber: "+39 2345678901", notes: null, emergencyContact: null },
-	hiker: { password: process.env.SEED_USER_PWD, role: "HIKER", fullName: "Paola Bianchi", email: "funnyhiker.82@gmail.com", phoneNumber: "+39 9876543210", notes: "registered mountain guide", emergencyContact: "+39 8765432109" },
-	hiker2: { password: process.env.SEED_USER_PWD, role: "HIKER", fullName: "Giovanni Muciaccia", email: "gio.ilMucia@gmail.com", phoneNumber: "+39 1212121212", notes: null, emergencyContact: "+39 9876543210" },
+
+
+export const WARDEN_USER = {
+	userId: 1,
+	role: "WARDEN",
+	password: process.env.SEED_USER_PWD,
+	fullName: "Mario Rossi",
+	email: "mario.rossi@gmail.com", phoneNumber: "+39 1234567890",
+	notes: null, emergencyContact: null
 };
+export const EMPLOYEE_USER = { 
+	userId: 2, 
+	role: "EMPLOYEE",
+	password: process.env.SEED_USER_PWD,
+	fullName: "Luigi Rossi",
+	email: "luigi.rossi@libero.it", phoneNumber: "+39 2345678901",
+	notes: null, emergencyContact: null 
+};
+export const HIKER_USER_1 = { 
+	userId: 3, 
+	role: "HIKER", 
+	password: process.env.SEED_USER_PWD, 
+	fullName: "Paola Bianchi",
+	email: "funnyhiker.82@gmail.com", phoneNumber: "+39 9876543210",
+	notes: "registered mountain guide",
+	emergencyContact: "+39 8765432109" 
+};
+export const HIKER_USER_2 = { 
+	userId: 4, 
+	role: "HIKER",
+	password: process.env.SEED_USER_PWD, 
+	fullName: "Giovanni Muciaccia",
+	email: "gio.ilMucia@gmail.com", phoneNumber: "+39 1212121212", 
+	notes: null, emergencyContact: "+39 9876543210"
+};
+
+export const USERS = [
+	WARDEN_USER,
+	EMPLOYEE_USER,
+	HIKER_USER_1,
+	HIKER_USER_2
+];
+
+export const GET_USER_BY_ID_MOCKED = (userId) => Object.assign({}, USERS[userId - 1]);
 
 const TABLE_LIST_1 = [6, 4, 6, 6, 4, 8]; 
 const TABLE_LIST_2 = [4, 4, 4, 6, 6, 6]; 
-const TABLE_LIST_3 = [4, 6, 8]; 
+const TABLE_LIST_3 = [4, 6, 8];
 
 export const SLOTS = [
 	{ start: Date.UTC(2027, 2, 10, 12, 30), end: Date.UTC(2027, 2, 10, 14, 30), tables: TABLE_LIST_1 },
@@ -55,68 +93,11 @@ function assertTestDatabase() {
 export const initSchema = async () => {
 	assertTestDatabase();
 	await createDBTables();
-	// await queryRun(`DROP TABLE IF EXISTS tableAssignments`);
-	// await queryRun(`DROP TABLE IF EXISTS tables`);
-	// await queryRun(`DROP TABLE IF EXISTS reservations`);
-	// await queryRun(`DROP TABLE IF EXISTS timeSlots`);
-	// await queryRun(`DROP TABLE IF EXISTS users`);
-
-	// await queryRun(`CREATE TABLE users (
-	// 	userId INTEGER PRIMARY KEY AUTOINCREMENT,
-	// 	passwordHash TEXT NOT NULL,
-	// 	passwordSalt TEXT NOT NULL,
-	// 	role TEXT NOT NULL CHECK (role IN ('HIKER', 'EMPLOYEE', 'WARDEN')),
-	// 	fullName TEXT NOT NULL,
-	// 	email TEXT UNIQUE NOT NULL,
-	// 	phoneNumber TEXT NOT NULL,
-	// 	notes TEXT,
-	// 	emergencyContact TEXT
-	// )`);
-
-	// await queryRun(`CREATE TABLE timeSlots (
-	// 	timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
-	// 	startDateTime TEXT UNIQUE NOT NULL,
-	// 	endDateTime TEXT NOT NULL
-	// )`);
-
-	// await queryRun(`CREATE TABLE reservations (
-	// 	reservId INTEGER PRIMARY KEY AUTOINCREMENT,
-	// 	userId INTEGER NOT NULL,
-	// 	timeSlotId INTEGER NOT NULL,
-	// 	partySize INTEGER NOT NULL,
-	// 	FOREIGN KEY (userId) REFERENCES users(userId),
-	// 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId)
-	// )`);
-
-	// await queryRun(`CREATE TABLE tables (
-	// 	tableId INTEGER PRIMARY KEY AUTOINCREMENT,
-	// 	tableNumber INTEGER NOT NULL,
-	// 	totalSeats INTEGER NOT NULL DEFAULT 0,
-	// 	freeSeats INTEGER NOT NULL DEFAULT 0,
-	// 	timeSlotId INTEGER NOT NULL,
-	// 	FOREIGN KEY (timeSlotId) REFERENCES timeSlots(timeSlotId),
-	// 	UNIQUE (timeSlotId, tableNumber)
-	// )`);
-
-	// await queryRun(`CREATE TABLE tableAssignments (
-	// 	tableId INTEGER NOT NULL,
-	// 	reservId INTEGER NOT NULL,
-	// 	occupiedSeats INTEGER NOT NULL,
-	// 	PRIMARY KEY (tableId, reservId),
-	// 	FOREIGN KEY (tableId) REFERENCES tables(tableId),
-	// 	FOREIGN KEY (reservId) REFERENCES reservations(reservId)
-	// )`);
 };
 
 export const clear_db = async () => {
 	assertTestDatabase();
 	await deleteDBData();
-	// await queryRun(`DELETE FROM tableAssignments`);
-	// await queryRun(`DELETE FROM tables`);
-	// await queryRun(`DELETE FROM timeSlots`);
-	// await queryRun(`DELETE FROM reservations`);
-	// await queryRun(`DELETE FROM users`);
-	// await queryRun(`DELETE FROM sqlite_sequence`);
 };
 
 export const seed_db = async () => {

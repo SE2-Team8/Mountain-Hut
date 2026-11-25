@@ -78,7 +78,7 @@ describe("POST /api/reservations - input validation", () => {
 
 	it("nobody can book on behalf of another user: a userId in the body is refused", async () => {
 		const agent = await loginAsRole("hiker");
-		const otherUser = await getUserId(USERS.hiker2.email);
+		const otherUser = await getUserId(HIKER_USER_2.email);
 		const res = await agent.post("/api/reservations").send(
 			{ timeSlotId: slot1, partySize: 2, userId: otherUser, dietaryRequirements: [] });
 
@@ -104,7 +104,7 @@ describe("POST /api/reservations - success", () => {
 		expect(res.status).toBe(201);
 		expectEnvelope(res, true);
 		expect(await getReservations()).toEqual([
-			{ reservId: res.body.data, userId: await getUserId(USERS.hiker.email), timeSlotId: slot1, 
+			{ reservId: res.body.data, userId: await getUserId(HIKER_USER_1.email), timeSlotId: slot1, 
 				partySize: 4, dietaryRequirements: "[]",  },
 		]);
 	});
@@ -228,12 +228,12 @@ describe("POST /api/reservations - email notification", () => {
 		const mailPayload = sendMail.mock.calls[0][0];
 
 		expect(mailPayload).toMatchObject({
-			to: USERS.hiker.email, // "funnyhiker.82@gmail.com"
+			to: HIKER_USER_1.email, // "funnyhiker.82@gmail.com"
 			subject: "Reservation Confirmation",
 			text: expect.stringContaining("confirmed"),
 		});
 
-		expect(mailPayload.html).toContain(USERS.hiker.fullName); // "Paola Bianchi"
+		expect(mailPayload.html).toContain(HIKER_USER_1.fullName); // "Paola Bianchi"
 		expect(mailPayload.html).toContain(`<strong>Party size:</strong> ${partySize}`);
 		
 		expect(mailPayload.html).toContain(`<strong>Reservation number:</strong> ${res.body.data}`);
