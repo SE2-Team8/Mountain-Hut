@@ -6,7 +6,7 @@ import { sendPasswordSetupEmail } from "../services/passwordSetupService.js";
 const userController = {
     
     searchHikers: async (req, res) => {
-        const hikers = await searchHikers(req.query.value);
+        const hikers = await searchHikers(req.query.value.trim());
 
         return responseSuccess(res, hikers, "Hikers retrieved");
     },
