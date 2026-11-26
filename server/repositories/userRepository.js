@@ -166,7 +166,7 @@ async function getPasswordResetToken(tokenHash) {
 	);
 
 	if (!row) return null;
-	return { userId: row.userId, expiresAt: row.expiresAt };
+	return { userId: row.userId, expiresAt: row.passwordResetExpiresAt };
 }
 
 // removes the reset token of the user 

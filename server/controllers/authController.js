@@ -5,6 +5,24 @@ import { responseError, responseSuccess } from "../utils/response.js";
 import { sendTemplateEmail } from "../services/smtpService.js";
 import { formatDateTime } from "../utils/dateTimeFormatter.js";
 
+// sends the "your password has been changed" email
+async function sendPasswordChangedEmail(user) {
+    try {
+        await sendTemplateEmail({
+            to: user.email,
+            subject: "Your password has been changed",
+            templateName: "password-changed",
+            data: {
+                user: { fullName: user.fullName },
+                changedAt: formatDateTime(new Date()),
+            },
+            text: "The password of your Mountain Hut account has been changed.",
+        });
+    } catch (error) {
+        console.error("Password changed, but the notification email could not be sent:", error);
+    }
+}
+
 const authController = {
     register: async (req, res) => {
         const { email, password, fullName, phone, notes, emergencyContact } = req.body;
@@ -57,21 +75,7 @@ const authController = {
         await updatePassword(user.userId, newPassword);
         const updatedUser = await getUserById(user.userId);
 
-        // notification email: if it cannot be sent, the password is changed anyway
-        try {
-            await sendTemplateEmail({
-                to: updatedUser.email,
-                subject: "Your password has been changed",
-                templateName: "password-changed",
-                data: {
-                    user: { fullName: updatedUser.fullName },
-                    changedAt: formatDateTime(new Date()),
-                },
-                text: "The password of your Mountain Hut account has been changed.",
-            });
-        } catch(error) {
-            console.error("Password changed, but the notification email could not be sent:", error);
-        }
+        await sendPasswordChangedEmail(updatedUser);
 
         // the session keeps a copy of the user: log in again so that mustChangePassword is up to date
         req.login(updatedUser, (err) => {
