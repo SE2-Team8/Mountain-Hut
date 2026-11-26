@@ -5,6 +5,8 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       DB_CONNECTION: ":memory:",
+      SEED_USER_PWD: "test_password",
+      PUBLIC_APP_URL: "http://localhost:5173",
     },
     clearMocks: true,
 	coverage: {

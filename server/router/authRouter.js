@@ -40,5 +40,26 @@ router.post('/change-password', isAuthenticated,
             .notEmpty().withMessage("newPassword cannot be empty")
     ]),
     wrapController(authController.changePassword));
+router.post('/forgot-password',
+    validator([
+        body().custom((b) => Object.keys(b).every((key) => ["email"].includes(key)))
+            .withMessage('Only email is allowed'),
+        body('email').exists().withMessage('email is required')
+            .isString().withMessage('email must be a string')
+            .isEmail().withMessage('the email must be valid'),
+    ]),
+    wrapController(authController.forgotPassword));
+router.post('/set-new-password',
+    validator([
+        body().custom((b) => Object.keys(b).every((key) => ["token", "password"].includes(key)))
+            .withMessage('Only token and password are allowed'),
+        body('token').hide().exists().withMessage('token is required')
+            .isString().withMessage('token must be a string').bail()
+            .matches(/^[0-9a-f]{64}$/).withMessage('A valid reset token is required'),
+        body('password').hide().isString().withMessage('password is required and must be a string').bail()
+            .isLength({ min: 8, max: 32 }).withMessage('Password must be 8 to 32 characters').bail()
+            .custom((password) => password.trim().length > 0).withMessage('Password cannot be blank'),
+    ]),
+    wrapController(authController.setNewPassword));
 
 export default router;
