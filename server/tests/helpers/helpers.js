@@ -51,7 +51,7 @@ export const USERS = [
 	HIKER_USER_2
 ];
 
-const USERS_BY_ROLE = { 
+export const USERS_BY_ROLE = { 
 	warden: WARDEN_USER, 
 	employee: EMPLOYEE_USER, 
 	hiker: HIKER_USER_1, 
