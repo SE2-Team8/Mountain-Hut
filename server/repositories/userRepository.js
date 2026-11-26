@@ -100,6 +100,12 @@ async function createUser(role, fullName, email, phoneNumber, notes = null, emer
 	return queryRes.lastID;
 }
 
+// creates a hiker and returns the new user id, throws an error if
+// a user with the same email already exists
+async function createHiker(fullName, email, phoneNumber, notes=null, emergencyContact=null, password = null) {
+	return await createUser("HIKER", fullName, email, phoneNumber, notes, emergencyContact, password);
+}
+
 // Sets a new password for the given user and clears the mustChangePassword flag.
 // Returns true if the user exists and was updated, false otherwise.
 // The current password must be checked before calling this function
@@ -115,12 +121,6 @@ async function updatePassword(userId, newPassword) {
 	);
 
 	return queryRes.changes > 0;
-}
-
-// creates a hiker and returns the new user id, throws an error if
-// a user with the same email already exists
-async function createHiker(fullName, email, phoneNumber, notes=null, emergencyContact=null, password = null) {
-	return await createUser("HIKER", fullName, email, phoneNumber, notes, emergencyContact, password);
 }
 
 async function storePasswordSetupToken(userId, tokenHash, expiresAt) {
@@ -145,8 +145,57 @@ async function setInitialPassword(tokenHash, password) {
 	return result.changes === 1;
 }
 
+// stores the hash of a new password reset token for the user, replacing the previous one: only the last sent works
+async function storePasswordResetToken(userId, tokenHash, expiresAt) {
+	const result = await queryRun(
+		`UPDATE users
+		SET passwordResetTokenHash = ?, passwordResetExpiresAt = ?
+		WHERE userId = ?`,
+		[tokenHash, expiresAt, userId]
+	);
 
-// 
+	return result.changes === 1;
+}
+
+// returns {userId, expiresAt} for the given token hash, or null if no user has it
+async function getPasswordResetToken(tokenHash) {
+	const row = await queryGet(
+		`SELECT userId, passwordResetExpiresAt
+		FROM users
+		WHERE passwordResetTokenHash = ?`,
+		[tokenHash]
+	);
+
+	if (!row) return null;
+	return { userId: row.userId, expiresAt: row.expiresAt };
+}
+
+// removes the reset token of the user 
+async function clearPasswordResetToken(userId) {
+	await queryRun(
+		`UPDATE users 
+		SET passwordResetTokenHash = NULL, passwordResetExpiresAt = NULL
+		WHERE userId = ?`,
+		[userId]
+	);
+}
+
+// sets the new password with a valid reset token
+// returns true if the password was set, false if the token does not exists, has expired or has just been used
+async function resetPasswordWithToken(tokenHash, password) {
+	const { hash, salt } = hashPassword(password);
+	const result = await queryRun(
+		`UPDATE users
+		SET passwordHash = ?, passwordSalt = ?, mustChangePassword = 0,
+			passwordResetTokenHash = NULL, passwordResetExpiresAt = NULL,
+			passwordSetupTokenHash = NULL, passwordSetupExpiresAt = NULL
+		WHERE passwordResetTokenHash = ? AND passwordResetExpiresAt > ?`,
+		[hash, salt, tokenHash, Date.now()]
+	);
+
+	return result.changes === 1;
+}
+
 
 // for future use
 // // creates a warden and returns the new user id, throws an error if
@@ -163,6 +212,7 @@ async function setInitialPassword(tokenHash, password) {
 
 
 export {
-	UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, updatePassword,
-	createHiker, storePasswordSetupToken, setInitialPassword, PWD_HASH_LEN, SALT_LEN
+	UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, 
+	updatePassword, storePasswordSetupToken, setInitialPassword, storePasswordResetToken, getPasswordResetToken, 
+	clearPasswordResetToken, resetPasswordWithToken, PWD_HASH_LEN, SALT_LEN
 };

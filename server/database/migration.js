@@ -19,7 +19,9 @@ function createDBTables() {
 		emergencyContact TEXT,
 		mustChangePassword INTEGER NOT NULL DEFAULT 0 CHECK (mustChangePassword IN (0, 1)),
 		passwordSetupTokenHash TEXT UNIQUE,
-		passwordSetupExpiresAt INTEGER
+		passwordSetupExpiresAt INTEGER,
+		passwordResetTokenHash TEXT UNIQUE,
+		passwordResetExpiresAt INTEGER
 	)`,
 	`CREATE TABLE IF NOT EXISTS timeSlots (
 		timeSlotId INTEGER PRIMARY KEY AUTOINCREMENT,
