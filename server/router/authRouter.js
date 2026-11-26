@@ -23,7 +23,9 @@ router.post('/register',
     checkBodyLength(6),
     validator([
         body('email').notEmpty().withMessage('email is required').isEmail().withMessage('Valid email is required'),
-        body('password').notEmpty().withMessage('password is required').isString().withMessage('Password must be a string'),
+        body('password').hide().isString().withMessage("password is required and must be a string").bail()
+            .isLength({ min: 8, max: 32 }).withMessage('Password must be 8 to 32 characters').bail()
+            .custom((password) => password.trim().length > 0).withMessage('Password cannot be blank'),
         body('fullName').notEmpty().withMessage('fullName is required').isString().withMessage('Full name must be a string'),
         body('phone').notEmpty().withMessage('phone is required').isString().withMessage('Phone must be a string')
     ]),
