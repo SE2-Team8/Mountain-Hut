@@ -13,8 +13,10 @@ import {
 const [S1, , , S4] = SLOTS;
 
 let slot1, slot4;
-const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send(
-	{ timeSlotId: timeSlotId, partySize: partySize, dietaryRequirements: [] });
+async function book(agent, timeSlotId, partySize) { 
+	const userId = (await agent.get("/api/auth/me")).body.data.userId;
+	return agent.post("/api/reservations").send({ userId, timeSlotId, partySize, dietaryRequirements: [] });
+}
 
 async function bookAndGetAssignments(role, timeSlotId, partySize) {
 	const res = await book(await loginAsRole(role), timeSlotId, partySize);

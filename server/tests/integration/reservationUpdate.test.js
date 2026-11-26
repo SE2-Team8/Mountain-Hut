@@ -10,7 +10,7 @@ import { getAvailableTables } from "../../repositories/reservationRepository.js"
 import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import {
 	initSchema, resetDb, loginAsRole, getUserId, getTimeSlotId, getReservations, getAssignments, getFreeSeats,
-	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, USERS, SLOTS,
+	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, SLOTS, HIKER_USER_1,
 	HIKER_USER_2,
 } from "../helpers/helpers.js";
 
