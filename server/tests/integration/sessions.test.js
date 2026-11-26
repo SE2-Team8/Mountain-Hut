@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import app from "../../index.js";
 import db from "../../config/db.js";
-import { initSchema, resetDb, loginAsRole, getUserId, expectEnvelope, USERS } from "../helpers/helpers.js";
+import { initSchema, resetDb, loginAsRole, getUserId, expectEnvelope, HIKER_USER_1, WARDEN_USER } from "../helpers/helpers.js";
 
 beforeAll(initSchema);
 beforeEach(resetDb);
@@ -24,6 +24,7 @@ describe("POST /api/auth/login (login)", () => {
 			phoneNumber: user.phoneNumber,
 			notes: user.notes,
 			emergencyContact: user.emergencyContact,
+			mustChangePassword: false,
 		});
 	});
 

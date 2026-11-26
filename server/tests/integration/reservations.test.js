@@ -6,16 +6,21 @@ import app from "../../index.js";
 import db from "../../config/db.js";
 import {
 	initSchema, resetDb, loginAsRole, getUserId, getTimeSlotId, getReservations, getAssignments, getFreeSeats,
-	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, USERS, SLOTS,
+	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, SLOTS, HIKER_USER_1, HIKER_USER_2
 } from "../helpers/helpers.js";
 
 const [S1, S2] = SLOTS;
 const NOW = "2027-03-09T12:30:00Z";
 const HOUR = 3600e3;
-
+ 
 let slot1, slot2;
-const book = (agent, timeSlotId, partySize) => agent.post("/api/reservations").send(
-	{ timeSlotId: timeSlotId, partySize: partySize, dietaryRequirements: [] });
+async function book(agent, timeSlotId, partySize) {
+	const meRes = (await agent.get("/api/auth/me"));
+	const userId = meRes.status === 401
+		? await getUserId(HIKER_USER_1.email)
+		: meRes.body.data.userId;
+	return agent.post("/api/reservations").send({ userId, timeSlotId, partySize, dietaryRequirements: [] });
+}
 
 beforeAll(initSchema);
 beforeEach(async () => {
@@ -63,15 +68,18 @@ describe("POST /api/reservations - input validation", () => {
 	});
 
 	it.each([
-		["an empty body", {}],
-		["missing timeSlotId", { partySize: 1, dietaryRequirements: [] }],
-		["missing partySize", { timeSlotId: 1, dietaryRequirements: [] }],
-		["missing dietaryRequirements", { timeSlotId: 1, partySize: 1 }],
-	])("400 for %s: the body must have exactly 3 fields", async (_label, body) => {
+		["the body is empty", () => {}],
+		["userId is missing", () => ({ timeSlotId: slot1, partySize: 1, dietaryRequirements: [] })],
+		["timeSlotId is missing", (me) => ({ userId: me, partySize: 1, dietaryRequirements: [] })],
+		["partySize is missing", (me) => ({ userId: me, timeSlotId: 1, dietaryRequirements: [] })],
+		["dietaryRequirements is missing", (me) => ({ userId: me, timeSlotId: 1, partySize: 1 })],
+	])("422 when %s, and nothing is booked", async (_label, makeBody) => {
 		const agent = await loginAsRole("hiker");
-		const res = await agent.post("/api/reservations").send(body);
+		const me = (await agent.get("/api/auth/me")).body.data.userId;
 
-		expect(res.status).toBe(400);
+		const res = await agent.post("/api/reservations").send(makeBody(me));
+
+		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
 		await expectNothingBooked();
 	});
@@ -105,7 +113,7 @@ describe("POST /api/reservations - success", () => {
 		expectEnvelope(res, true);
 		expect(await getReservations()).toEqual([
 			{ reservId: res.body.data, userId: await getUserId(HIKER_USER_1.email), timeSlotId: slot1, 
-				partySize: 4, dietaryRequirements: "[]",  },
+				partySize: 4, dietaryRequirements: "[]", temporaryHikerName: null, temporaryHikerPhone: null },
 		]);
 	});
 
@@ -172,7 +180,7 @@ describe("POST /api/reservations - success", () => {
 describe("POST /api/reservations - one reservation per user per slot", () => {
 	it("409 on the second booking of the same slot, and nothing else changes", async () => {
 		const agent = await loginAsRole("hiker");
-		await book(agent, slot1, 2).expect(201);
+		expect((await book(agent, slot1, 2)).status).toBe(201);
 		const res = await book(agent, slot1, 3);
 		expect(res.status).toBe(409);
 		expectEnvelope(res, false);
