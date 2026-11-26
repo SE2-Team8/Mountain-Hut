@@ -110,8 +110,7 @@ async function createHiker(fullName, email, phoneNumber, notes=null, emergencyCo
 // Returns true if the user exists and was updated, false otherwise.
 // The current password must be checked before calling this function
 async function updatePassword(userId, newPassword) {
-	const salt = crypto.randomBytes(SALT_LEN).toString('hex');
-	const hashedPassword = crypto.scryptSync(newPassword, salt, PWD_HASH_LEN).toString('hex');
+	const { salt, hash: hashedPassword } = hashPassword(newPassword);
 
 	const queryRes = await queryRun(
 		`UPDATE users
@@ -167,7 +166,7 @@ async function getPasswordResetToken(tokenHash) {
 	);
 
 	if (!row) return null;
-	return { userId: row.userId, expiresAt: row.expiresAt };
+	return { userId: row.userId, expiresAt: row.passwordResetExpiresAt };
 }
 
 // removes the reset token of the user 
@@ -214,5 +213,5 @@ async function resetPasswordWithToken(tokenHash, password) {
 export {
 	UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, 
 	updatePassword, storePasswordSetupToken, setInitialPassword, storePasswordResetToken, getPasswordResetToken, 
-	clearPasswordResetToken, resetPasswordWithToken, PWD_HASH_LEN, SALT_LEN
+	clearPasswordResetToken, resetPasswordWithToken, hashPassword
 };

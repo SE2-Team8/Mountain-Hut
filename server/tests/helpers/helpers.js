@@ -1,14 +1,10 @@
-import crypto from "crypto";
 import request from "supertest";
 import { expect, Experimental, vi } from "vitest";
 import app from "../../index.js";
-import { PWD_HASH_LEN, SALT_LEN } from "../../repositories/userRepository.js";
+import { hashPassword } from "../../repositories/userRepository.js";
 import { dateToStringISO } from "../../utils/dateTimeFormatter.js";
 import { queryAll, queryGet, queryRun } from "../../utils/query.js";
 import { createDBTables, deleteDBData } from "../../database/migration.js";
-
-
-
 
 export const WARDEN_USER = {
 	userId: 1,
@@ -82,8 +78,8 @@ let hashedUsers = null;
 function getHashedUsers() {
 	if (!hashedUsers) {
 		hashedUsers = Object.values(USERS).map((user) => {
-			const salt = crypto.randomBytes(SALT_LEN).toString("hex");
-			return { ...user, salt, hash: crypto.scryptSync(user.password, salt, PWD_HASH_LEN).toString("hex") };
+			const { salt, hash } = hashPassword(user.password);
+			return { ...user, salt, hash };
 		});
 	}
 	return hashedUsers;
