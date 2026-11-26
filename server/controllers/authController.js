@@ -1,5 +1,6 @@
 import { createHiker, getUserById, getUserFromEmail, getUserFromCredentials, updatePassword } from "../repositories/userRepository.js";
-import { completePasswordSetup } from "../services/passwordSetupService.js";
+import { completePasswordSetup, sendPasswordResetEmail, findPasswordResetToken, 
+    discardPasswordResetToken, completePasswordReset } from "../services/passwordService.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 import { sendTemplateEmail } from "../services/smtpService.js";
 import { formatDateTime } from "../utils/dateTimeFormatter.js";
@@ -77,6 +78,43 @@ const authController = {
             if (err) return responseError(res, null, "Password changed, but the session could not be updated", 500);
             return responseSuccess(res, null, "Password successfully changed");
         });
+    },
+
+    forgotPassword: async (req, res) => {
+        const user = await getUserFromEmail(req.body.email);
+
+        if (user) {
+            try {
+                await sendPasswordResetEmail(user);
+            } catch (error) {
+                console.error("The password reset email could not be sent:", error);
+            }
+        }
+
+        return responseSuccess(res, null, "If the email is registered, a link to reset the password has been sent");
+    },
+
+    // sets a new password using the token received by email
+    setNewPassword: async (req, res) => {
+        const { token, password } = req.body;
+
+        const resetToken = await findPasswordResetToken(token);
+        if (!resetToken)
+            return responseError(res, null, "The reset link is not valid or has already been used", 400);
+
+        // business rule: a reset link is valid for 15 minutes
+        if (resetToken.expiresAt <= Date.now()) {
+            await discardPasswordResetToken(resetToken.userId);
+            return responseError(res, null, "The reset link has expired, ask for a new one", 409);
+        }
+
+        // if another request has just used the same token, nothing changes
+        if (!await completePasswordReset(token, password))
+            return responseError(res, null, "The reset link is not valid or has already been used", 400);
+
+        await sendPasswordChangedEmail(await getUserById(resetToken.userId));
+
+        return responseSuccess(res, null, "Password successfully set");
     }
 };
 

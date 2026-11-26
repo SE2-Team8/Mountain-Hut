@@ -1,7 +1,7 @@
 import { getUser, searchHikers } from "../services/userService.js";
 import { responseError, responseSuccess } from "../utils/response.js";
 import { createHiker, getUserFromEmail, getUserById } from "../repositories/userRepository.js";
-import { sendPasswordSetupEmail } from "../services/passwordSetupService.js";
+import { sendPasswordSetupEmail } from "../services/passwordService.js";
 
 const userController = {
     
