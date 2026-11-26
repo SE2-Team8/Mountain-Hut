@@ -9,7 +9,7 @@ import app from "../../index.js";
 import db from "../../config/db.js";
 import {
 	initSchema, resetDb, loginAsRole, getTimeSlotId, getReservations, getFreeSeats,
-	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, SLOTS,
+	expectSeatsConsistent, freezeTime, muteConsoleError, expectEnvelope, SLOTS, getUserId, HIKER_USER_1
 } from "../helpers/helpers.js";
 
 const [S1] = SLOTS;
@@ -24,7 +24,11 @@ const bodyOf = (overrides = {}) => ({
     dietaryRequirements: [],
     ...overrides,
 });
-const book = (agent, overrides = {}) => agent.post("/api/reservations").send(bodyOf(overrides));
+async function book(agent, overrides = {}) {
+	const meRes = await agent.get("/api/auth/me");
+	const userId = meRes.status === 401 ? await getUserId(HIKER_USER_1.email) : meRes.body.data.userId;
+	return agent.post("/api/reservations").send(bodyOf({ userId, ...overrides }));
+}
 
 // one requirement as the client send it
 const requirement = (description, allergies) => ({ description, allergies });
@@ -132,20 +136,25 @@ describe("POST /api/reservations - requirements: input validation", () => {
 		await expectNothingBooked();
 	});
 
-    it("400 when dietaryRequirements is missing: the body must have exactly 3 fields, and nothing is booked", async () => {
-		const body = bodyOf();
-		delete body.dietaryRequirements;
-		const res = await (await loginAsRole("hiker")).post("/api/reservations").send(body);
+    it.each([
+		["dietaryRequirements is missing", "dietaryRequirements"],
+	])("422 when %s, and nothing is booked", async (_label, missing) => {
+		const agent = await loginAsRole("hiker");
+		const userId = (await agent.get("/api/auth/me")).body.data.userId;
+		const body = bodyOf({ userId });
+		delete body[missing];
 
-		expect(res.status).toBe(400);
+		const res = await agent.post("/api/reservations").send(body);
+
+		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
 		await expectNothingBooked();
 	});
 
-    it("400 when the body has an unknown field, and nothing is booked", async () => {
+    it("422 when the body has an unknown field, and nothing is booked", async () => {
 		const res = await book(await loginAsRole("hiker"), { notes: "please be kind" });
 
-		expect(res.status).toBe(400);
+		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
 		await expectNothingBooked();
 	});
