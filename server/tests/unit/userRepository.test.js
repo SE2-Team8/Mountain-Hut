@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { queryAll, queryGet, queryRun } from "../../utils/query.js";
-import { getUserById, getUserFromEmail, User, createHiker, hashPassword, UserRole } from "../../repositories/userRepository.js";
+import { getUserById, getUserFromEmail, updatePassword, User, createHiker, hashPassword, UserRole, PWD_HASH_LEN } from "../../repositories/userRepository.js";
 import crypto from "crypto";
 
 vi.mock("../../utils/query.js", () => ({

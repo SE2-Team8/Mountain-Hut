@@ -213,5 +213,5 @@ async function resetPasswordWithToken(tokenHash, password) {
 export {
 	UserRole, User, isStaff, getUserById, getUserFromEmail, getHikerbyEmOrPhoneOrName, getUserFromCredentials, createHiker, 
 	updatePassword, storePasswordSetupToken, setInitialPassword, storePasswordResetToken, getPasswordResetToken, 
-	clearPasswordResetToken, resetPasswordWithToken, hashPassword
+	clearPasswordResetToken, resetPasswordWithToken, hashPassword, PWD_HASH_LEN
 };
