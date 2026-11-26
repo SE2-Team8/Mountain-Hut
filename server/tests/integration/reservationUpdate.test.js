@@ -24,7 +24,8 @@ const requirement = (description, allergies) => ({ description, allergies });
 
 // creates a reservation through the API and returns its id
 async function book(agent, { timeSlotId = slot1, partySize = 4, dietaryRequirements = [] } = {}) {
-	const res = await agent.post("/api/reservations").send({ timeSlotId, partySize, dietaryRequirements });
+	const userId = (await agent.get("/api/auth/me")).body.data.userId;
+	const res = await agent.post("/api/reservations").send({ userId, timeSlotId, partySize, dietaryRequirements });
 	expect(res.status, "the booking used to prepare the test must succeed").toBe(201);
 	return res.body.data;
 }
