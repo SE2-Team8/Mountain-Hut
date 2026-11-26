@@ -1,7 +1,6 @@
 import { table } from "console";
 import db from "../config/db.js";
-import crypto from "crypto";
-import { PWD_HASH_LEN, SALT_LEN } from "../repositories/userRepository.js";
+import { hashPassword } from "../repositories/userRepository.js";
 import { dateToStringISO } from "../utils/dateTimeFormatter.js";
 import { createReservation } from "../repositories/reservationRepository.js";
 
@@ -46,20 +45,16 @@ const users = [
 ];
 
 
-users.forEach((user) => {
-    user.salt = crypto.randomBytes(SALT_LEN).toString('hex');
-    user.hashedPassword = crypto.scryptSync(user.password, user.salt, PWD_HASH_LEN).toString('hex');
-});
-
 db.serialize(() => {
     users.forEach((user) => {
+		const { salt, hash } = hashPassword(user.password);
         db.run(
             `INSERT INTO users 
 			(passwordHash, passwordSalt, role, fullName, email, phoneNumber, notes, emergencyContact)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-				user.hashedPassword,
-				user.salt,
+				hash,
+				salt,
 				user.role,
 				user.fullName,
 				user.email,
