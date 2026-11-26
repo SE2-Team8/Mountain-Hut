@@ -113,7 +113,7 @@ describe("GET /api/users/search - what is found", () => {
 
     it("finds a hiker who registered right now", async () => {
 		await request(app).post("/api/auth/register").send({
-			email: "new.hiker@example.com", password: "s3cret!", fullName: "Nuovo Escursionista",
+			email: "new.hiker@example.com", password: "s3cret!!", fullName: "Nuovo Escursionista",
 			phone: "+39 333 1112222", notes: null, emergencyContact: null,
 		}).expect(201);
 

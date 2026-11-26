@@ -168,7 +168,7 @@ describe("POST /api/reservations - success", () => {
 	it("a user can book right after registering (the automatic login works)", async () => {
 		const agent = request.agent(app);
 		await agent.post("/api/auth/register").send({
-			email: "new.hiker@example.com", password: "s3cret!", fullName: "New Hiker",
+			email: "new.hiker@example.com", password: "s3cret!!", fullName: "New Hiker",
 			phone: "+39 333 1112222", notes: "n", emergencyContact: "e",
 		}).expect(201);
 

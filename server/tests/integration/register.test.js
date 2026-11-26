@@ -14,7 +14,7 @@ afterAll(() => db.close());
 
 const NEW_USER = {
 	email: "new.hiker@example.com",
-	password: "s3cret!",
+	password: "s3cret!!",
 	fullName: "New Hiker",
 	phone: "+39 333 1112222",
 	notes: "vegetarian",
