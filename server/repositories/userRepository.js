@@ -88,7 +88,7 @@ async function createUser(role, fullName, email, phoneNumber, notes = null, emer
 		throw new Error("User with the same email already exists!");
 
 	const mustChangePassword = role === UserRole.HIKER && password === null;
-	const { hash, salt } = hashPassword(password?.trim() || crypto.randomBytes(32).toString("hex"));
+	const { hash, salt } = hashPassword(password ?? crypto.randomBytes(32).toString("hex"));
     
 	const queryRes = await queryRun(
 		`INSERT INTO users 
