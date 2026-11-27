@@ -64,13 +64,13 @@ const authController = {
     changePassword: async (req, res) => {
         const { currentPassword, newPassword } = req.body;
 
-        // business rule: the new password must be different from the current one
-        if (newPassword === currentPassword)
-            return responseError(res, null, "The new password must be different from the current one", 422);
-
         // the current password of the logged user must be correct
         const user = await getUserFromCredentials(req.user.email, currentPassword);
         if (!user) return responseError(res, null, "The current password is wrong", 403);
+
+        // business rule: the new password must be different from the current one
+        if (newPassword === currentPassword)
+            return responseError(res, null, "The new password must be different from the current one", 422);
 
         await updatePassword(user.userId, newPassword);
         const updatedUser = await getUserById(user.userId);

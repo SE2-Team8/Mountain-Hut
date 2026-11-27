@@ -37,9 +37,9 @@ router.post('/change-password', isAuthenticated,
         body('currentPassword').exists().withMessage('currentPassword id required')
             .isString().withMessage('currentPassword must be a string')
             .notEmpty().withMessage('currentPassword cannot be empty'),
-        body('newPassword').exists().withMessage('newPassword is required')
-            .isString().withMessage('newPassword must be a string')
-            .notEmpty().withMessage("newPassword cannot be empty")
+        body('newPassword').hide().isString().withMessage("newPassword is required and must be a string").bail()
+            .isLength({ min: 8, max: 32 }).withMessage('newPassword must be 8 to 32 characters').bail()
+            .custom((password) => password.trim().length > 0).withMessage('newPassword cannot be blank'),
     ]),
     wrapController(authController.changePassword));
 router.post('/forgot-password',
