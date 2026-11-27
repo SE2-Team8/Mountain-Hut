@@ -49,12 +49,14 @@ describe("POST /api/auth/forgot-password", () => {
 		const mail = sendMail.mock.calls[0][0];
 		expect(mail.to).toBe(HIKER_USER_1.email);
 		expect(mail.subject).toBe("Reset your Mountain Hut password");
+		expect(mail.html).toContain(`Hello, ${HIKER_USER_1.fullName}!`);
 		expect(mail.html).toContain("Reset password");
 		const resetUrl = getResetUrl(mail);
 		expect(resetUrl.origin).toBe("http://localhost:5173");
 		expect(resetUrl.pathname).toBe("/auth/reset-password");
 		const token = new URLSearchParams(resetUrl.hash.slice(1)).get("token");
 		expect(token).toMatch(/^[a-f0-9]{64}$/);
+		expect(mail.html).toContain(token);
 		const row = await queryGet(
 			"SELECT passwordResetTokenHash, passwordResetExpiresAt FROM users WHERE email = ?",
 			[HIKER_USER_1.email]
