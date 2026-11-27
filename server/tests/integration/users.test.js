@@ -94,7 +94,8 @@ describe("POST /api/users", () => {
 			phoneNumber: HIKER_USER_1.phoneNumber,
 			notes: HIKER_USER_1.notes,
 			emergencyContact: HIKER_USER_1.emergencyContact,
-			mustChangePassword: true
+			mustChangePassword: true,
+			passwordSetupEmailSent: true,
 		})
 	});
 
@@ -105,6 +106,8 @@ describe("POST /api/users", () => {
 			email: newEmail,
 			fullName: HIKER_USER_1.fullName,
 			phone: HIKER_USER_1.phoneNumber,
+			notes: "",
+			emergencyContact: "",
 		});
 		expect(res.status).toBe(201);
 		expectEnvelope(res, true);
@@ -116,7 +119,8 @@ describe("POST /api/users", () => {
 			phoneNumber: HIKER_USER_1.phoneNumber,
 			notes: null,
 			emergencyContact: null,
-			mustChangePassword: true
+			mustChangePassword: true,
+			passwordSetupEmailSent: true,
 		})
 	});
 });
