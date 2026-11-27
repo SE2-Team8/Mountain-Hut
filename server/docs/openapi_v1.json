@@ -578,7 +578,9 @@
 					"email": { "type": "string", "format": "email" },
 					"password": { "type": "string" },
 					"fullName": { "type": "string" },
-					"phone": { "type": "string" }
+					"phone": { "type": "string" },
+					"notes": { "type": "string" },
+					"emergencyContact": { "type": "string" }
 				}
 			},
 			"SetupPasswordRequest": {
@@ -618,7 +620,9 @@
 				"properties": {
 					"email": { "type": "string", "format": "email" },
 					"fullName": { "type": "string" },
-					"phone": { "type": "string" }
+					"phone": { "type": "string" },
+					"notes": { "type": "string" },
+					"emergencyContact": { "type": "string" }
 				}
 			},
 			"Table": {
