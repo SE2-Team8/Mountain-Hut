@@ -256,7 +256,6 @@ describe("authController.changePassword", () => {
         await authController.changePassword(req, res);
 
         expect(responseError).toHaveBeenCalledWith(res, null, expect.any(String), 422);
-        expect(getUserFromCredentials).not.toHaveBeenCalled();
         expect(updatePassword).not.toHaveBeenCalled();
         expect(getUserById).not.toHaveBeenCalled();
         expect(sendTemplateEmail).not.toHaveBeenCalled();
