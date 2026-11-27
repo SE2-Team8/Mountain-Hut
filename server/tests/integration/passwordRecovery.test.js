@@ -24,7 +24,7 @@ function getResetUrl(mail) {
 
 async function requestResetToken(email = HIKER_USER_1.email) {
 	await forgotPassword(email);
-	const mail = sendMail.mock.calls[0][0];
+	const mail = sendMail.mock.calls.at(-1)[0];
 	const resetUrl = getResetUrl(mail);
 	return resetUrl.hash.slice(1).match(/(?:^|&)token=([a-f0-9]{64})(?:&|$)/)[1];
 }
@@ -33,6 +33,7 @@ beforeAll(initSchema);
 beforeEach(async () => {
 	muteConsoleError();
 	await resetDb();
+	sendMail.mockReset();
 	sendMail.mockResolvedValue({ messageId: "test-id", accepted: [], rejected: [] });
 });
 afterAll(() => db.close());
@@ -74,6 +75,17 @@ describe("POST /api/auth/forgot-password", () => {
 		expectEnvelope(res, true);
 		expect(res.body.message).toBe("If the email is registered, a link to reset the password has been sent");
 		expect(sendMail).not.toHaveBeenCalled();
+	});
+
+	it("returns the generic response when email delivery fails", async () => {
+		sendMail.mockRejectedValue(new Error("SMTP unavailable"));
+
+		const res = await forgotPassword(HIKER_USER_1.email);
+
+		expect(res.status).toBe(200);
+		expectEnvelope(res, true);
+		expect(res.body.message).toBe("If the email is registered, a link to reset the password has been sent");
+		expect(sendMail).toHaveBeenCalledTimes(1);
 	});
 
 	it.each([
@@ -151,10 +163,38 @@ describe("POST /api/auth/set-new-password", () => {
 			.expect(200);
 	});
 
+	it("only accepts the most recently requested reset token", async () => {
+		const firstToken = await requestResetToken();
+		const secondToken = await requestResetToken();
+
+		expect(secondToken).not.toBe(firstToken);
+		expect(sendMail).toHaveBeenCalledTimes(2);
+		const row = await queryGet(
+			"SELECT passwordResetTokenHash FROM users WHERE email = ?",
+			[HIKER_USER_1.email],
+		);
+		expect(row.passwordResetTokenHash).toBe(hashToken(secondToken));
+
+		const firstAttempt = await setNewPassword(firstToken, RESET_PASSWORD);
+		expect(firstAttempt.status).toBe(400);
+		expectEnvelope(firstAttempt, false);
+
+		const secondAttempt = await setNewPassword(secondToken, RESET_PASSWORD);
+		expect(secondAttempt.status).toBe(200);
+		expectEnvelope(secondAttempt, true);
+		await request(app).post("/api/auth/login")
+			.send({ username: HIKER_USER_1.email, password: RESET_PASSWORD })
+			.expect(200);
+	});
+
 	it.each([
 		["malformed token", { token: "not-a-token", password: RESET_PASSWORD }],
+		["non-string token", { token: 123, password: RESET_PASSWORD }],
+		["missing token", { password: RESET_PASSWORD }],
 		["missing password", { token: "a".repeat(64) }],
+		["non-string password", { token: "a".repeat(64), password: 12345678 }],
 		["short password", { token: "a".repeat(64), password: "short" }],
+		["long password", { token: "a".repeat(64), password: "p".repeat(33) }],
 		["blank password", { token: "a".repeat(64), password: "        " }],
 		["unexpected field", { token: "a".repeat(64), password: RESET_PASSWORD, extra: true }],
 	])("rejects %s without changing credentials", async (_label, body) => {
