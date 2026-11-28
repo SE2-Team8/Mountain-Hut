@@ -12,7 +12,7 @@ import reservationController from "../../controllers/reservationController.js";
 import { formatDateTime } from "../../utils/dateTimeFormatter.js";
 import { sendTemplateEmail } from "../../services/smtpService.js";
 import { getUserById } from "../../repositories/userRepository.js";
-import { GET_USER_BY_ID_MOCKED, HIKER_USER_1 } from "../helpers/helpers.js";
+import { EMPLOYEE_USER, GET_USER_BY_ID_MOCKED, HIKER_USER_1, HIKER_USER_2, WARDEN_USER } from "../helpers/helpers.js";
 
 vi.mock("../../repositories/reservationRepository.js", () => ({
   createReservation: vi.fn(),
@@ -111,6 +111,63 @@ describe("reservationController.create - happy path", () => {
 
     expect(createReservation).toHaveBeenCalledWith(HIKER_USER_1.userId, 1, 4, dietaryReq, null, null);
     expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+  });
+});
+
+describe("reservationController.create - booking on behalf of a hiker", () => {
+  const employee = EMPLOYEE_USER.userId;
+  const hiker = HIKER_USER_1.userId;
+
+  beforeEach(() => {
+    getTimeSlotById.mockResolvedValue({ ...slotStartingIn(HOUR), freeSeats: 4 });
+  });
+
+  it("lets an employee book inside the two-hour window and emails the selected hiker", async () => {
+    const diet = [{ description: "No nuts", allergies: true }];
+    await callCreateReservation(employee, hiker, 1, 2, diet);
+
+    expect(getReservationsByUser).toHaveBeenCalledWith(hiker, 1);
+    expect(createReservation).toHaveBeenCalledWith(hiker, 1, 2, diet, null, null);
+    expect(sendTemplateEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to: HIKER_USER_1.email, templateName: "reservation-confirmation",
+    }));
+    expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+  });
+
+  it.each([null, "+393331234567"])("books a temporary hiker under the employee account (phone %s)", async (phone) => {
+    getReservationsByUser.mockResolvedValue([{ reservId: 10 }]);
+    await callCreateReservation(employee, employee, 1, 2, [], "Lee", phone);
+
+    expect(createReservation).toHaveBeenCalledWith(employee, 1, 2, [], "Lee", phone);
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
+    expect(responseSuccess).toHaveBeenCalledWith(res, 42, expect.any(String), 201);
+  });
+
+  it.each([
+    ["a phone without a name", employee, employee, null, "+393331234567"],
+    ["both a registered and a temporary hiker", employee, hiker, "Lee", null],
+    ["neither a registered nor a temporary hiker", employee, employee, null, null],
+    ["a temporary hiker under another staff account", employee, WARDEN_USER.userId, "Lee", null],
+    ["a hiker booking on behalf of another hiker", hiker, HIKER_USER_2.userId, null, null],
+  ])("rejects %s", async (_, requester, recipient, name, phone) => {
+    getTimeSlotById.mockResolvedValue({ ...slotStartingIn(4 * HOUR), freeSeats: 4 });
+    await callCreateReservation(requester, recipient, 1, 2, [], name, phone);
+    expect(responseError).toHaveBeenCalledWith(res, null, expect.any(String), 400);
+    expect(createReservation).not.toHaveBeenCalled();
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects a duplicate booking for the selected hiker", async () => {
+    getReservationsByUser.mockImplementation(async (userId) => userId === hiker ? [{ reservId: 10 }] : []);
+    await callCreateReservation(employee, hiker, 1, 2);
+    expect(responseError).toHaveBeenCalledWith(res, null, expect.any(String), 409);
+    expect(createReservation).not.toHaveBeenCalled();
+  });
+
+  it("rejects a temporary hiker's party when it exceeds the available seats", async () => {
+    await callCreateReservation(employee, employee, 1, 5, [], "Lee");
+    expect(responseError).toHaveBeenCalledWith(res, null, expect.any(String), 400);
+    expect(createReservation).not.toHaveBeenCalled();
   });
 });
 

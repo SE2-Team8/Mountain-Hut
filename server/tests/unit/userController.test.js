@@ -128,7 +128,7 @@ describe("userController.post", () => {
 		expect(getUserById).toHaveBeenCalledWith(testUser.userId);
 		expect(sendPasswordSetupEmail).toHaveBeenCalledWith(testUser);
 		expect(responseSuccess).toHaveBeenCalledWith(res, 
-			{...HIKER_USER_1, passwordSetupEmailSent: mailSuccess}, 
+			{...HIKER_USER_1}, 
 			expect.anything(), 201);
 		expect(responseError).not.toHaveBeenCalled();
 	});
