@@ -36,7 +36,8 @@ function Navbar() {
     const links = [
         { to: "/", label: "Home", end: true },
         { to: "/availability", label: "Availability" },
-        ...(user ? [{ to: "/reservations", label: "My Reservations" }] : []),
+        ...(user && !isStaff ? [{ to: "/reservations", label: "My Reservations" }] : []),
+        ...(isStaff ? [{ to: "/reservations/book-for-hiker", label: "Book for a hiker"}] : []),
         ...(isStaff ? [{ to: "/capacity", label: "Define capacity" }] : []),
     ];
 

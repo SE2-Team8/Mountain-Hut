@@ -14,6 +14,7 @@ import useUserStore from "@/store/user";
 import { createBrowserRouter } from "react-router";
 import auth from "@/middlewares/auth";
 import PageInspectReservation from "@/pages/inspectReservation";
+import PageBookForHiker from "@/pages/bookForHiker";
 
 const router = createBrowserRouter([
     {
@@ -50,6 +51,11 @@ const router = createBrowserRouter([
             {
                 path: 'reservations/:reservation_id',
                 Component: PageInspectReservation,
+                middleware: [auth],
+            },
+            {
+                path: 'reservations/book-for-hiker',
+                Component: PageBookForHiker,
                 middleware: [auth],
             },
             {
