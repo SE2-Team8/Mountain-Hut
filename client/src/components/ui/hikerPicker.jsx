@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Check, Search, UserRound, UserRoundPlus } from "lucide-react";
+import { Check, Search, UserRound, Zap } from "lucide-react";
 import api from "@/api";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel, MandatoryLabel } from "@/components/ui/field";
@@ -42,7 +42,7 @@ function HikerPicker({ value, onChange, error, disabled = false, createHikerHref
 					disabled={disabled}
 					onClick={() => switchMode(HikerMode.TEMPORARY)}
 				>
-					<UserRoundPlus aria-hidden="true" />
+					<Zap aria-hidden="true" />
 					Temporary hiker
 				</Button>
 			</div>
