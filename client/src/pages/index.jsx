@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowRight, CalendarCheck, ClipboardList, LogIn, MapPin, Mountain, Phone, Route, Search, Users, Utensils } from "lucide-react";
+import { ArrowRight, CalendarCheck, ClipboardList, LogIn, MapPin, Mountain, Phone, Route, Search, Users, Utensils, PhoneCall, UserRoundPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import useUserStore from "@/store/user";
@@ -30,6 +30,18 @@ const STAFF_ACTIONS = [
         title: "Define time slots & tables",
         text: "Create a service slot and set its tables and seats, or copy the setup of a previous slot.",
     },
+    {
+        to: "/reservations/book-for-hiker",
+        icon: PhoneCall,
+        title: "Book for a hiker",
+        text: "Enter a reservation received by phone, by message or at the hut, for a registered hiker or a temporary one."
+    },
+    {
+        to: "/hikers/new",
+        icon: UserRoundPlus,
+        title: "Create a new hiker",
+        text: ""
+    }
 ];
 
 const HUT_INFO = [

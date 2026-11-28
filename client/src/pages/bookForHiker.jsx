@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import { UserRoundCheck } from "lucide-react";
 import HikerPicker from "@/components/ui/hikerPicker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,11 @@ const STAFF_ROLES = new Set(["EMPLOYEE", "WARDEN"]);
 // a reservation entered by an employee:
 function PageBookForHiker() {
 	const user = useUserStore((state) => state.user);
-	const [hikerSelection, setHikerSelection] = useState(emptyHikerSelection());
+	const location = useLocation();
+	// a hiker just created in the "new hiker account" page arrives already chosen
+	const [hikerSelection, setHikerSelection] = useState(() =>
+		location.state?.hiker ? { mode: HikerMode.REGISTERED, user: location.state.hiker } : emptyHikerSelection()
+	);
 	// the error of the first part is shown only after the first attempt to confirm
 	const [showHikerError, setShowHikerError] = useState(false);
 
@@ -36,6 +40,7 @@ function PageBookForHiker() {
 							value={hikerSelection}
 							onChange={setHikerSelection}
 							error={showHikerError ? hikerError : null}
+							createHikerHref="/hikers/new"
 						/>
 
 						<FieldSeparator />
@@ -51,7 +56,7 @@ function PageBookForHiker() {
 	);
 }
 
-// shows who the reservation is for, until the second part of the page is in place
+// shows who the reservation is for
 function ReservationFor({ selection, hikerError }) {
 	if (hikerError) {
 		return (
@@ -69,7 +74,6 @@ function ReservationFor({ selection, hikerError }) {
 			<UserRoundCheck aria-hidden="true" className="size-5 shrink-0 text-primary" />
 			<p>
 				Booking for <strong>{name}</strong> <span className="text-muted-foreground">({kind})</span>.
-				The reservation details will go here.
 			</p>
 		</div>
 	);

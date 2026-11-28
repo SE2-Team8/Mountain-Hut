@@ -15,6 +15,7 @@ import { createBrowserRouter } from "react-router";
 import auth from "@/middlewares/auth";
 import PageInspectReservation from "@/pages/inspectReservation";
 import PageBookForHiker from "@/pages/bookForHiker";
+import PageCreateHiker from "@/pages/createHiker";
 
 const router = createBrowserRouter([
     {
@@ -61,6 +62,11 @@ const router = createBrowserRouter([
             {
                 path: 'capacity',
                 Component: PageCapacity,
+                middleware: [auth],
+            },
+            {
+                path: 'hikers/new',
+                Component: PageCreateHiker,
                 middleware: [auth],
             },
         ]
