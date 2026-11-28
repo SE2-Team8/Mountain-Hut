@@ -148,18 +148,18 @@ describe("POST /api/timeslots - authentication", ()=>{
 })
 
 describe("POST /api/timeslots - invalid data", ()=>{ 
-	it("400 if too few body parameters", async()=>{
+	it("422 if too few body parameters", async()=>{
 	const agent = await loginAsRole("employee");
 			const res = await agent.post('/api/timeslots').send({
 				startDateTime : UTCToISOString(2027, 10, 10, 12, 30),
 				endDateTime : UTCToISOString(2027, 10, 13, 12, 30),
 				}	
 			)
- 			expect(res.status).toBe(400);
+ 			expect(res.status).toBe(422);
 			expectEnvelope(res, false)
 			await noTimeSlotAdded();	
 	})
-	it("400 if too many body parameters", async()=>{
+	it("422 if too many body parameters", async()=>{
 	const agent = await loginAsRole("employee");
 			const res = await agent.post('/api/timeslots').send({
 				startDateTime : UTCToISOString(2027, 10, 10, 12, 30),
@@ -168,7 +168,7 @@ describe("POST /api/timeslots - invalid data", ()=>{
 				copyFromTimeSlotId : 1
 				}	
 			)
- 			expect(res.status).toBe(400);
+ 			expect(res.status).toBe(422);
 			expectEnvelope(res, false)
 			await noTimeSlotAdded();	
 	})

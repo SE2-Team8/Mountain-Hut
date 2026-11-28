@@ -429,7 +429,7 @@ describe("PUT /api/reservations/:id - input validation", () => {
 		["timeSlotId is missing", "timeSlotId"],
 		["partySize is missing", "partySize"],
 		["dietaryRequirements is missing", "dietaryRequirements"],
-	])("400 when %s: the body must have exactly 3 fields, and nothing changes", async (_label, missing) => {
+	])("422 when %s: the body must have exactly 3 fields, and nothing changes", async (_label, missing) => {
 		const agent = await loginAsRole("hiker");
 		const reservId = await book(agent);
 		sendMail.mockClear();
@@ -439,12 +439,12 @@ describe("PUT /api/reservations/:id - input validation", () => {
 
 		const res = await agent.put(`/api/reservations/${reservId}`).send(body);
 
-		expect(res.status).toBe(400);
+		expect(res.status).toBe(422);
 		expectEnvelope(res, false);
 		await expectUnchanged(reservId, before);
 	});
 
-    it("400 when the body has an extra field, and nothing changes", async () => {
+    it("422 when the body has an extra field, and nothing changes", async () => {
 		const agent = await loginAsRole("hiker");
 		const reservId = await book(agent);
 		sendMail.mockClear();
@@ -452,7 +452,7 @@ describe("PUT /api/reservations/:id - input validation", () => {
 
 		const res = await update(agent, reservId, { userId: await getUserId(HIKER_USER_2.email) });
 
-		expect(res.status).toBe(400);
+		expect(res.status).toBe(422);
 		await expectUnchanged(reservId, before);
 	});
 });

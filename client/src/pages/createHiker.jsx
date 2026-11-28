@@ -58,8 +58,8 @@ function PageCreateHiker() {
 			email: data.email.trim(),
 			fullName: data.fullName.trim(),
 			phone: data.phone,
-			notes: data.notes?.trim() || null,
-			emergencyContact: data.emergencyPhone || null,
+			...(data.notes?.trim() && { notes: data.notes.trim() }),
+			...(data.emergencyPhone?.trim() && { emergencyContact: data.emergencyPhone.trim() }),
 		});
 
 		if (response?.success) {

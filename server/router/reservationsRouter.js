@@ -2,14 +2,14 @@ import express from "express";
 import { body, param } from "express-validator";
 import reservationController from "../controllers/reservationController.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
-import { validator, checkBodyLength } from "../middlewares/validator.js";
+import { validator, checkAllowedFields } from "../middlewares/validator.js";
 import wrapController from "../utils/wrapController.js";
 
 const router = express.Router();
 
 router.post('/', isAuthenticated,
+    checkAllowedFields(["userId", "timeSlotId", "partySize", "dietaryRequirements", "tmpHikerName", "tmpHikerPhone"]),
     validator([
-        body().custom((b) => Object.keys(b).every((key) => ["userId", "timeSlotId", "partySize", "dietaryRequirements", "tmpHikerName", "tmpHikerPhone"].includes(key))).withMessage('Unknown field in the body'),
         body('userId').notEmpty().withMessage('userId is required').isInt({ min: 1}).withMessage('userId must be an integer grater than 0'),
         body('timeSlotId').notEmpty().withMessage('timeSlotId is required').isInt({ min: 1}).withMessage('timeSlotId must be an integer grater than 0'),
         body('partySize').notEmpty().withMessage('partySize is required').isInt({ min: 1}).withMessage('partySize must be an integer grater than 0'),
@@ -30,8 +30,7 @@ router.get('/:id', isAuthenticated,
 router.get('/', isAuthenticated,
     wrapController(reservationController.retrieveAll));
 
-router.put('/:id', isAuthenticated,
-    checkBodyLength(3),
+router.put('/:id', isAuthenticated, checkAllowedFields(["timeSlotId", "partySize", "dietaryRequirements"]),
     validator([
         param('id').isInt({ min: 1 }).withMessage('reservId must be a positive integer').toInt(),
         body('timeSlotId').notEmpty().withMessage('timeSlotId is required').isInt({ min: 1 }).withMessage('timeSlotId must be a positive integer').toInt(),

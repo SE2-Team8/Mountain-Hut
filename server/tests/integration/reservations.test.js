@@ -68,7 +68,7 @@ describe("POST /api/reservations - input validation", () => {
 	});
 
 	it.each([
-		["the body is empty", () => {}],
+		["the body is empty", () => ({})],
 		["userId is missing", () => ({ timeSlotId: slot1, partySize: 1, dietaryRequirements: [] })],
 		["timeSlotId is missing", (me) => ({ userId: me, partySize: 1, dietaryRequirements: [] })],
 		["partySize is missing", (me) => ({ userId: me, timeSlotId: 1, dietaryRequirements: [] })],

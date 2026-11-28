@@ -2,7 +2,7 @@ import express from "express";
 import { body, param, query } from "express-validator";
 import timeSlotController from "../controllers/timeSlotController.js";
 import requireRole from "../middlewares/requireRole.js";
-import { validator, checkBodyLength } from "../middlewares/validator.js";
+import { validator, checkAllowedFields } from "../middlewares/validator.js";
 import wrapController from "../utils/wrapController.js";
 
 const router = express.Router();
@@ -18,7 +18,7 @@ router.get('/',
 // Create a time slot with either a table list or another time slot's table list.
 router.post('/',
     requireRole("EMPLOYEE", "WARDEN"),
-    checkBodyLength(3),
+    checkAllowedFields(["startDateTime", "endDateTime", "tables", "copyFromTimeSlotId"]),
     validator([
         body('startDateTime').isISO8601().withMessage('startDateTime must be a valid ISO date'),
         body('endDateTime').isISO8601().withMessage('endDateTime must be a valid ISO date').bail()

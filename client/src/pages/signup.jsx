@@ -60,8 +60,8 @@ function PageSignUp() {
       fullName: data.fullName,
       email: data.username,
       phone: data.phone,
-      emergencyContact: data.emergencyPhone,
-      notes: data.notes
+      ...(data.emergencyPhone?.trim() && { emergencyContact: data.emergencyPhone.trim() }),
+      ...(data.notes?.trim() && { notes: data.notes.trim() }),
     }
     const response = await api.auth.signUp(body);
     if (response?.success) {
