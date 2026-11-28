@@ -3,7 +3,7 @@ content-type: application/json
 
 {
     "username": "r0ssi.mari0.se2.1998@gmail.com",
-    "password": "iLoveHuts"
+    "password": "libellula"
 }
 
 ###
@@ -63,4 +63,4 @@ GET http://localhost:3001/api/timeslots/availability?start=2027-03-10T12:30:00.0
 GET http://localhost:3001/api/reservations/
 
 ###
-GET http://localhost:3001/api/users/search?value=     rossi                          
+GET http://localhost:3001/api/users/search?   rossi                     

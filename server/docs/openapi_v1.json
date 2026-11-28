@@ -289,6 +289,38 @@
 				}
 			}
 		},
+		"/users/search": {
+			"get": {
+				"tags": ["Users"],
+				"summary": "Search hikers",
+				"description": "Requires an authenticated user with role EMPLOYEE or WARDEN. Searches hikers by full name, email, or phone number and returns matching profiles.",
+				"security": [{ "cookieAuth": [] }],
+				"parameters": [
+					{ "name": "value", "in": "query", "required": true, "schema": { "type": "string", "minLength": 1 }, "description": "Text to search for surrounding whitespace is ignored." }
+				],
+				"responses": {
+					"200": {
+						"description": "Matching hikers retrieved; an empty list is returned when there are no matches.",
+						"content": { "application/json": {
+							"schema": {
+								"allOf": [
+									{ "$ref": "#/components/schemas/Success" },
+									{
+										"type": "object",
+										"properties": {
+											"data": { "type": "array", "items": { "$ref": "#/components/schemas/User" } }
+										}
+									}
+								]
+							}
+						} }
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"422": { "$ref": "#/components/responses/BadRequest" }
+				}
+			}
+		},
 
 		"/timeslots": {
 			"get": {
