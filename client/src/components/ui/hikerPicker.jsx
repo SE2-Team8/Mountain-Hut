@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel, MandatoryLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { HikerMode, emptyHikerSelection, emptyTemporaryHiker } from "@/utils/hikerSelection";
+import { HikerMode, emptyHikerSelection, emptyTemporaryHiker, getTemporaryPhoneError } from "@/utils/hikerSelection";
 
 // the search starts from the first character, after a short pause in typing
 const MIN_SEARCH_LENGTH = 1;
@@ -185,6 +185,8 @@ function HikerSummary({ user }) {
 }
 
 function TemporaryHikerFields({ value, onChange, disabled }) {
+	const phoneError = getTemporaryPhoneError(value.phone);
+
 	return (
 		<div className="grid gap-4 rounded-xl border border-dashed p-4 sm:grid-cols-2">
 			<Field>
@@ -198,7 +200,7 @@ function TemporaryHikerFields({ value, onChange, disabled }) {
 					onChange={(event) => onChange({ ...value, name: event.target.value })}
 				/>
 			</Field>
-			<Field>
+			<Field data-invalid={Boolean(phoneError)}>
 				<FieldLabel htmlFor="temporary-hiker-phone">Phone (optional)</FieldLabel>
 				<PhoneInput
 					id="temporary-hiker-phone"
@@ -206,8 +208,10 @@ function TemporaryHikerFields({ value, onChange, disabled }) {
 					international
 					defaultCountry="IT"
 					disabled={disabled}
+					aria-invalid={Boolean(phoneError)}
 					onChange={(phone) => onChange({ ...value, phone: phone ?? "" })}
 				/>
+				{phoneError && <FieldError errors={[{ message: phoneError }]} />}
 			</Field>
 			<FieldDescription className="sm:col-span-2">
 				A temporary hiker has no account and cannot log in. No confirmation email is sent.

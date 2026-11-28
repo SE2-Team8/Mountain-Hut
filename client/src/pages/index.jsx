@@ -40,7 +40,7 @@ const STAFF_ACTIONS = [
         to: "/hikers/new",
         icon: UserRoundPlus,
         title: "Create a new hiker",
-        text: ""
+        text: "Create an account for a hiker. They will receive an email to set their password."
     }
 ];
 

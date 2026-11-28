@@ -1,3 +1,10 @@
+import { isValidPhoneNumber } from "react-phone-number-input";
+
+// the phone of a temporary hiker is optional, but it must be valid
+export function getTemporaryPhoneError(phone) {
+	return phone && !isValidPhoneNumber(phone) ? "Invalid phone number" : null;
+}
+
 // who a reservation made by an employee is for:
 // - a registered hiker found with the search: { mode: "REGISTERED", user } (user is null until one is chosen)
 // - a temporary hiker, with only a name and maybe a phone: { mode: "TEMPORARY", name, phone }
@@ -13,9 +20,11 @@ export const emptyTemporaryHiker = () => ({ mode: HikerMode.TEMPORARY, name: "",
 
 // returns the message to show when the selection is not complete, or null when it is valid
 export function getHikerSelectionError(selection) {
-	if (selection?.mode === HikerMode.TEMPORARY)
-		return selection.name?.trim() ? null : "Enter the name of the hiker";
-
+	if (selection?.mode === HikerMode.TEMPORARY) {
+		if (!selection.name?.trim()) return "Enter the name of the hiker";
+		return getTemporaryPhoneError(selection.phone);
+	}
+	
 	return selection?.user ? null : "Search and choose the hiker";
 }
 
