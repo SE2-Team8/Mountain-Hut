@@ -123,7 +123,8 @@ describe("createReservation - results and persistence", () => {
 	it.each(
 	[
 		[[USER_ID, TIME_SLOT_ID, 3, [], null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), null, null]],
-		[[USER_ID, TIME_SLOT_ID, 3, [], null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), null, null]],
+		[[USER_ID, TIME_SLOT_ID, 3, [], "Lee", "+393331234567"], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), "Lee", "+393331234567"]],
+		[[USER_ID, TIME_SLOT_ID, 3, [], "Lee", undefined], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify([]), "Lee", null]],
 		[[USER_ID, TIME_SLOT_ID, 3, dietaryNotes, null, null], [USER_ID, TIME_SLOT_ID, 3, JSON.stringify(dietaryNotes), null, null]],
 	]
   )("inserts the reservation and returns its id", async (args, expected) => {
